@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EduTrack — Student Management</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div class="brand-text">
+          <span class="brand-name">EduTrack</span>
+          <span class="brand-sub">Management System</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-view="dashboard">
+          <i class="fa-solid fa-chart-pie"></i><span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" data-view="students">
+          <i class="fa-solid fa-users"></i><span>Students</span>
+        </a>
+        <a href="#" class="nav-item" data-view="attendance">
+          <i class="fa-solid fa-calendar-check"></i><span>Attendance</span>
+        </a>
+        <a href="#" class="nav-item" data-view="add">
+          <i class="fa-solid fa-user-plus"></i><span>Add Student</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn-sidebar-action" id="exportBtn">
+          <i class="fa-solid fa-file-arrow-down"></i><span>Export CSV</span>
+        </button>
+        <label class="btn-sidebar-action" for="importInput">
+          <i class="fa-solid fa-file-arrow-up"></i><span>Import CSV</span>
+        </label>
+        <input
+          type="file"
+          id="importInput"
+          accept=".csv"
+          style="display: none"
+        />
+      </div>
+
+      <button class="sidebar-toggle" id="sidebarToggle">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+    </aside>
+
+    <!-- ═══ MAIN ═══ -->
+    <main class="main" id="main">
+      <!-- Top bar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="hamburger" id="hamburger">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <h1 class="page-title" id="pageTitle">Dashboard</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="search-wrap" id="searchWrap">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search name or ID…"
+            />
+            <button class="search-clear" id="searchClear">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <div class="avatar">A</div>
+        </div>
+      </header>
+
+      <!-- ── DASHBOARD VIEW ── -->
+      <section class="view active" id="view-dashboard">
+        <div class="stat-grid">
+          <div class="stat-card accent-blue">
+            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+            <div class="stat-body">
+              <span class="stat-label">Total Students</span>
+              <span class="stat-value" id="statTotal">0</span>
+            </div>
+          </div>
+          <div class="stat-card accent-teal">
+            <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+            <div class="stat-body">
+              <span class="stat-label">Average GPA</span>
+              <span class="stat-value" id="statAvgGpa">0.00</span>
+            </div>
+          </div>
+          <div class="stat-card accent-amber">
+            <div class="stat-icon">
+              <i class="fa-solid fa-calendar-check"></i>
+            </div>
+            <div class="stat-body">
+              <span class="stat-label">Avg. Attendance</span>
+              <span class="stat-value" id="statAttendance">—</span>
+            </div>
+          </div>
+          <div class="stat-card accent-rose">
+            <div class="stat-icon"><i class="fa-solid fa-trophy"></i></div>
+            <div class="stat-body">
+              <span class="stat-label">Top GPA</span>
+              <span class="stat-value" id="statTopGpa">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-row">
+          <div class="dash-card grade-breakdown">
+            <h3 class="dash-card-title">Students by Grade</h3>
+            <div class="grade-bars" id="gradeBars"></div>
+          </div>
+          <div class="dash-card recent-list">
+            <h3 class="dash-card-title">Recently Added</h3>
+            <ul id="recentStudents" class="recent-ul"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── STUDENTS VIEW ── -->
+      <section class="view" id="view-students">
+        <div class="toolbar">
+          <div class="filter-chips" id="filterChips">
+            <button class="chip active" data-grade="all">All</button>
+            <button class="chip" data-grade="9">Grade 9</button>
+            <button class="chip" data-grade="10">Grade 10</button>
+            <button class="chip" data-grade="11">Grade 11</button>
+            <button class="chip" data-grade="12">Grade 12</button>
+          </div>
+          <span class="student-count" id="studentCount">0 students</span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="students-table" id="studentsTable">
+            <thead>
+              <tr>
+                <th class="sortable" data-sort="name">
+                  Name <i class="fa-solid fa-sort"></i>
+                </th>
+                <th>Student ID</th>
+                <th>Email</th>
+                <th class="sortable" data-sort="grade">
+                  Grade <i class="fa-solid fa-sort"></i>
+                </th>
+                <th class="sortable" data-sort="gpa">
+                  GPA <i class="fa-solid fa-sort"></i>
+                </th>
+                <th>Enrolled</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="studentsBody"></tbody>
+          </table>
+          <div class="empty-state" id="emptyState">
+            <div class="empty-icon"><i class="fa-solid fa-user-slash"></i></div>
+            <h3>No students found</h3>
+            <p>Try adjusting your search or add a new student.</p>
+            <button class="btn-primary" onclick="app.switchView('add')">
+              <i class="fa-solid fa-plus"></i> Add Student
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── ATTENDANCE VIEW ── -->
+      <section class="view" id="view-attendance">
+        <div class="attendance-header">
+          <p class="att-date" id="attDate"></p>
+          <div class="att-summary">
+            <span id="attPresent">0 present</span>
+            <span class="att-divider">·</span>
+            <span id="attAbsent">0 absent</span>
+          </div>
+        </div>
+        <div class="attendance-grid" id="attendanceGrid"></div>
+      </section>
+
+      <!-- ── ADD / EDIT STUDENT VIEW ── -->
+      <section class="view" id="view-add">
+        <div class="form-card">
+          <h2 class="form-title" id="formTitle">Add New Student</h2>
+          <form id="studentForm" novalidate>
+            <input type="hidden" id="editingId" />
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="fName">Full Name <span class="req">*</span></label>
+                <input type="text" id="fName" placeholder="Emma Watson" />
+                <span class="form-error" id="errName"></span>
+              </div>
+              <div class="form-group">
+                <label for="fId">Student ID <span class="req">*</span></label>
+                <input type="text" id="fId" placeholder="STU-001" />
+                <span class="form-error" id="errId"></span>
+              </div>
+              <div class="form-group">
+                <label for="fEmail">Email <span class="req">*</span></label>
+                <input type="email" id="fEmail" placeholder="emma@school.edu" />
+                <span class="form-error" id="errEmail"></span>
+              </div>
+              <div class="form-group">
+                <label for="fGrade"
+                  >Grade Level <span class="req">*</span></label
+                >
+                <select id="fGrade">
+                  <option value="">Select grade…</option>
+                  <option value="9">Grade 9</option>
+                  <option value="10">Grade 10</option>
+                  <option value="11">Grade 11</option>
+                  <option value="12">Grade 12</option>
+                </select>
+                <span class="form-error" id="errGrade"></span>
+              </div>
+              <div class="form-group">
+                <label for="fGpa"
+                  >GPA (0.0 – 4.0) <span class="req">*</span></label
+                >
+                <input
+                  type="number"
+                  id="fGpa"
+                  placeholder="3.50"
+                  step="0.01"
+                  min="0"
+                  max="4"
+                />
+                <span class="form-error" id="errGpa"></span>
+              </div>
+              <div class="form-group">
+                <label for="fDate"
+                  >Enrollment Date <span class="req">*</span></label
+                >
+                <input type="date" id="fDate" />
+                <span class="form-error" id="errDate"></span>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="button"
+                class="btn-ghost"
+                id="cancelEdit"
+                style="display: none"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary" id="submitBtn">
+                <i class="fa-solid fa-plus"></i> Add Student
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </main>
+
+    <!-- ═══ MODALS ═══ -->
+
+    <!-- Student Detail Modal -->
+    <div class="modal-overlay" id="detailOverlay">
+      <div class="modal" id="detailModal">
+        <button class="modal-close" id="detailClose">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="modal-detail-header">
+          <div class="detail-avatar" id="detailAvatar"></div>
+          <div>
+            <h2 class="detail-name" id="detailName"></h2>
+            <span class="detail-id" id="detailId"></span>
+          </div>
+        </div>
+        <div class="detail-grid" id="detailGrid"></div>
+      </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="modal-overlay" id="confirmOverlay">
+      <div class="modal modal-sm">
+        <div class="confirm-icon">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h3 class="confirm-title">Delete Student?</h3>
+        <p class="confirm-msg" id="confirmMsg"></p>
+        <div class="confirm-actions">
+          <button class="btn-ghost" id="confirmCancel">Cancel</button>
+          <button class="btn-danger" id="confirmOk">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
