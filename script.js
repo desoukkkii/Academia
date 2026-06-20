@@ -1,1151 +1,1251 @@
-/**
- * EduTrack — Student Management System
- * script.js
- *
- * Architecture:
- *  - Student         : data model
- *  - AttendanceRecord: per-day presence tracking
- *  - StudentManager  : CRUD + LocalStorage persistence
- *  - UI              : rendering + event wiring
- */
+/* ═════════════════════════════════════════════════════════
+   Quantio — Student Intelligence Platform
+   Script
+═════════════════════════════════════════════════════════ */
 
-"use strict";
+const Quantio = (() => {
+  "use strict";
 
-/* ════════════════════════════════════════════════
-   1. Student Model
-════════════════════════════════════════════════ */
-class Student {
-  /**
-   * @param {object} data
-   * @param {string} data.id        – unique internal key (auto-generated)
-   * @param {string} data.name      – full name
-   * @param {string} data.studentId – human-readable student ID (e.g. STU-001)
-   * @param {string} data.email
-   * @param {number} data.grade     – 9 | 10 | 11 | 12
-   * @param {number} data.gpa       – 0.0 – 4.0
-   * @param {string} data.enrollDate – ISO date string
-   * @param {object} data.attendance – { "YYYY-MM-DD": "present"|"absent", … }
-   * @param {string} data.createdAt  – ISO date string
-   */
-  constructor(data) {
-    this.id = data.id || crypto.randomUUID();
-    this.name = data.name.trim();
-    this.studentId = data.studentId.trim().toUpperCase();
-    this.email = data.email.trim().toLowerCase();
-    this.grade = Number(data.grade);
-    this.gpa = parseFloat(Number(data.gpa).toFixed(2));
-    this.enrollDate = data.enrollDate;
-    this.attendance = data.attendance || {};
-    this.createdAt = data.createdAt || new Date().toISOString();
-  }
+  /* ═══════════════════════════════════════════════════
+     Utilities
+  ═══════════════════════════════════════════════════ */
 
-  /** Initials for avatar rendering */
-  get initials() {
-    return this.name
-      .split(" ")
-      .map((p) => p[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
-  }
+  const Utils = {
+    uid: () => crypto.randomUUID(),
 
-  /** Attendance percentage across all recorded days */
-  get attendancePercentage() {
-    const days = Object.values(this.attendance);
-    if (!days.length) return null;
-    const present = days.filter((v) => v === "present").length;
-    return Math.round((present / days.length) * 100);
-  }
+    esc: (str) =>
+      String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;"),
 
-  /** GPA tier string: 'high' | 'mid' | 'low' */
-  get gpaTier() {
-    if (this.gpa >= 3.5) return "high";
-    if (this.gpa >= 2.5) return "mid";
-    return "low";
-  }
-}
-
-/* ════════════════════════════════════════════════
-   2. StudentManager
-════════════════════════════════════════════════ */
-class StudentManager {
-  static STORAGE_KEY = "edutrack_students";
-
-  constructor() {
-    /** @type {Student[]} */
-    this._students = [];
-    this._load();
-  }
-
-  /* ── Persistence ── */
-
-  _load() {
-    try {
-      const raw = localStorage.getItem(StudentManager.STORAGE_KEY);
-      if (raw) {
-        this._students = JSON.parse(raw).map((d) => new Student(d));
-      }
-    } catch (e) {
-      console.error("EduTrack: failed to load from storage", e);
-      this._students = [];
-    }
-  }
-
-  _save() {
-    try {
-      localStorage.setItem(
-        StudentManager.STORAGE_KEY,
-        JSON.stringify(this._students),
-      );
-    } catch (e) {
-      console.error("EduTrack: failed to save to storage", e);
-    }
-  }
-
-  /* ── CRUD ── */
-
-  /** @returns {Student[]} */
-  getAll() {
-    return [...this._students];
-  }
-
-  /** @param {string} id @returns {Student|undefined} */
-  getById(id) {
-    return this._students.find((s) => s.id === id);
-  }
-
-  /**
-   * Add a new student.
-   * @param {object} data
-   * @returns {{ ok: boolean, error?: string, student?: Student }}
-   */
-  add(data) {
-    const validation = this._validate(data);
-    if (!validation.ok) return validation;
-
-    // Unique student ID check
-    if (
-      this._students.some(
-        (s) => s.studentId === data.studentId.trim().toUpperCase(),
-      )
-    ) {
-      return {
-        ok: false,
-        field: "studentId",
-        error: "Student ID already exists.",
-      };
-    }
-    // Unique email check
-    if (
-      this._students.some((s) => s.email === data.email.trim().toLowerCase())
-    ) {
-      return { ok: false, field: "email", error: "Email already registered." };
-    }
-
-    const student = new Student(data);
-    this._students.unshift(student); // newest first
-    this._save();
-    return { ok: true, student };
-  }
-
-  /**
-   * Update an existing student.
-   * @param {string} id
-   * @param {object} data
-   * @returns {{ ok: boolean, error?: string, student?: Student }}
-   */
-  update(id, data) {
-    const idx = this._students.findIndex((s) => s.id === id);
-    if (idx === -1) return { ok: false, error: "Student not found." };
-
-    const validation = this._validate(data);
-    if (!validation.ok) return validation;
-
-    // Unique checks excluding current student
-    if (
-      this._students.some(
-        (s) =>
-          s.id !== id && s.studentId === data.studentId.trim().toUpperCase(),
-      )
-    ) {
-      return {
-        ok: false,
-        field: "studentId",
-        error: "Student ID already exists.",
-      };
-    }
-    if (
-      this._students.some(
-        (s) => s.id !== id && s.email === data.email.trim().toLowerCase(),
-      )
-    ) {
-      return { ok: false, field: "email", error: "Email already registered." };
-    }
-
-    const existing = this._students[idx];
-    const updated = new Student({
-      ...existing,
-      ...data,
-      id,
-      attendance: existing.attendance,
-      createdAt: existing.createdAt,
-    });
-    this._students[idx] = updated;
-    this._save();
-    return { ok: true, student: updated };
-  }
-
-  /**
-   * Delete a student by internal id.
-   * @param {string} id
-   * @returns {boolean}
-   */
-  delete(id) {
-    const before = this._students.length;
-    this._students = this._students.filter((s) => s.id !== id);
-    if (this._students.length < before) {
-      this._save();
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Record today's attendance for a student.
-   * @param {string} id
-   * @param {'present'|'absent'} status
-   */
-  markAttendance(id, status) {
-    const student = this.getById(id);
-    if (!student) return;
-    const today = new Date().toISOString().slice(0, 10);
-    student.attendance[today] = status;
-    this._save();
-  }
-
-  /* ── Queries ── */
-
-  /**
-   * Filter & sort.
-   * @param {{ search?: string, grade?: string, sort?: string, dir?: 'asc'|'desc' }} opts
-   * @returns {Student[]}
-   */
-  filter({ search = "", grade = "all", sort = "", dir = "asc" } = {}) {
-    let list = this.getAll();
-
-    // Grade filter
-    if (grade !== "all") {
-      list = list.filter((s) => String(s.grade) === String(grade));
-    }
-
-    // Text search (name or student ID)
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter(
-        (s) =>
-          s.name.toLowerCase().includes(q) ||
-          s.studentId.toLowerCase().includes(q),
-      );
-    }
-
-    // Sort
-    if (sort) {
-      list.sort((a, b) => {
-        let va, vb;
-        if (sort === "name") {
-          va = a.name.toLowerCase();
-          vb = b.name.toLowerCase();
-        }
-        if (sort === "grade") {
-          va = a.grade;
-          vb = b.grade;
-        }
-        if (sort === "gpa") {
-          va = a.gpa;
-          vb = b.gpa;
-        }
-        if (va < vb) return dir === "asc" ? -1 : 1;
-        if (va > vb) return dir === "asc" ? 1 : -1;
-        return 0;
+    dateStr: (d) => {
+      const dt = new Date(d);
+      return dt.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
       });
-    }
+    },
 
-    return list;
-  }
+    isoDate: (d) => new Date(d).toISOString().slice(0, 10),
 
-  /** Dashboard statistics */
-  stats() {
-    const all = this.getAll();
-    const total = all.length;
-    const avgGpa = total ? all.reduce((s, st) => s + st.gpa, 0) / total : 0;
-    const byGrade = { 9: 0, 10: 0, 11: 0, 12: 0 };
-    all.forEach((s) => {
-      byGrade[s.grade] = (byGrade[s.grade] || 0) + 1;
-    });
-    const topGpa = total ? Math.max(...all.map((s) => s.gpa)) : null;
+    today: () => new Date().toISOString().slice(0, 10),
 
-    const attPcts = all
-      .map((s) => s.attendancePercentage)
-      .filter((p) => p !== null);
-    const avgAtt = attPcts.length
-      ? Math.round(attPcts.reduce((a, b) => a + b, 0) / attPcts.length)
-      : null;
+    timeAgo: (iso) => {
+      const diff = Date.now() - new Date(iso).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return "just now";
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      const days = Math.floor(hrs / 24);
+      return `${days}d ago`;
+    },
 
-    return { total, avgGpa, byGrade, topGpa, avgAtt };
-  }
+    formatTime: (iso) => {
+      const d = new Date(iso);
+      return d.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    },
+  };
 
-  /* ── Validation ── */
+  /* ═══════════════════════════════════════════════════
+     State
+  ═══════════════════════════════════════════════════ */
 
-  _validate(data) {
-    if (!data.name?.trim())
-      return { ok: false, field: "name", error: "Full name is required." };
-    if (!data.studentId?.trim())
-      return {
-        ok: false,
-        field: "studentId",
-        error: "Student ID is required.",
+  const state = {
+    students: [],
+    view: "dashboard",
+    theme: localStorage.getItem("quantio_theme") || "dark",
+    filters: { search: "", grade: "all", sort: "", dir: "asc" },
+    editingId: null,
+    activity: [],
+    _listeners: [],
+
+    subscribe(fn) {
+      this._listeners.push(fn);
+      return () => {
+        this._listeners = this._listeners.filter((l) => l !== fn);
       };
-    if (!data.email?.trim())
-      return { ok: false, field: "email", error: "Email is required." };
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())) {
-      return { ok: false, field: "email", error: "Invalid email format." };
+    },
+
+    notify() {
+      this._listeners.forEach((fn) => fn());
+    },
+
+    setView(name) {
+      this.view = name;
+      this.editingId = null;
+      this.notify();
+    },
+
+    setTheme(theme) {
+      this.theme = theme;
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("quantio_theme", theme);
+      this.notify();
+    },
+
+    toggleTheme() {
+      this.setTheme(this.theme === "dark" ? "light" : "dark");
+    },
+
+    setFilters(partial) {
+      Object.assign(this.filters, partial);
+      this.notify();
+    },
+
+    addActivity(type, text) {
+      this.activity.unshift({ type, text, time: Utils.timeAgo(new Date().toISOString()), timestamp: Date.now() });
+      if (this.activity.length > 50) this.activity.length = 50;
+      this.notify();
+    },
+  };
+
+  /* ═══════════════════════════════════════════════════
+     Student Model
+  ═══════════════════════════════════════════════════ */
+
+  class Student {
+    constructor(data) {
+      this.id = data.id || Utils.uid();
+      this.name = data.name.trim();
+      this.studentId = data.studentId.trim().toUpperCase();
+      this.email = data.email.trim().toLowerCase();
+      this.grade = Number(data.grade);
+      this.gpa = parseFloat(Number(data.gpa).toFixed(2));
+      this.enrollDate = data.enrollDate;
+      this.attendance = data.attendance || {};
+      this.createdAt = data.createdAt || new Date().toISOString();
     }
-    if (!data.grade || ![9, 10, 11, 12].includes(Number(data.grade))) {
-      return { ok: false, field: "grade", error: "Select a valid grade." };
+
+    get initials() {
+      return this.name
+        .split(" ")
+        .map((p) => p[0])
+        .slice(0, 2)
+        .join("")
+        .toUpperCase();
     }
-    const gpa = parseFloat(data.gpa);
-    if (isNaN(gpa) || gpa < 0 || gpa > 4) {
-      return {
-        ok: false,
-        field: "gpa",
-        error: "GPA must be between 0.0 and 4.0.",
-      };
+
+    get attendancePct() {
+      const days = Object.values(this.attendance);
+      if (!days.length) return null;
+      const present = days.filter((v) => v === "present").length;
+      return Math.round((present / days.length) * 100);
     }
-    if (!data.enrollDate)
-      return {
-        ok: false,
-        field: "enrollDate",
-        error: "Enrollment date is required.",
-      };
-    return { ok: true };
+
+    get gpaTier() {
+      if (this.gpa >= 3.5) return "high";
+      if (this.gpa >= 2.5) return "mid";
+      return "low";
+    }
   }
 
-  /* ── CSV I/O ── */
+  /* ═══════════════════════════════════════════════════
+     Services
+  ═══════════════════════════════════════════════════ */
 
-  exportCSV() {
-    const headers = [
-      "Name",
-      "Student ID",
-      "Email",
-      "Grade",
-      "GPA",
-      "Enrolled",
-      "Attendance %",
-    ];
-    const rows = this.getAll().map((s) => [
-      `"${s.name}"`,
-      s.studentId,
-      s.email,
-      s.grade,
-      s.gpa,
-      s.enrollDate,
-      s.attendancePercentage !== null ? `${s.attendancePercentage}%` : "N/A",
-    ]);
-    return [headers, ...rows].map((r) => r.join(",")).join("\n");
-  }
+  const Storage = {
+    _key: "quantio_students",
 
-  /**
-   * Import students from CSV text.
-   * Expected columns: Name, Student ID, Email, Grade, GPA, Enrolled
-   * @param {string} csv
-   * @returns {{ added: number, skipped: number, errors: string[] }}
-   */
-  importCSV(csv) {
-    const lines = csv.trim().split("\n").filter(Boolean);
-    const results = { added: 0, skipped: 0, errors: [] };
-    if (lines.length < 2) {
-      results.errors.push("CSV has no data rows.");
+    load() {
+      try {
+        const raw = localStorage.getItem(this._key);
+        return raw ? JSON.parse(raw).map((d) => new Student(d)) : [];
+      } catch {
+        return [];
+      }
+    },
+
+    save(students) {
+      try {
+        localStorage.setItem(this._key, JSON.stringify(students));
+      } catch (e) {
+        console.error("Quantio: save failed", e);
+      }
+    },
+  };
+
+  const StudentManager = {
+    _students: [],
+
+    init() {
+      this._students = Storage.load();
+    },
+
+    getAll() {
+      return [...this._students];
+    },
+
+    getById(id) {
+      return this._students.find((s) => s.id === id);
+    },
+
+    add(data) {
+      const err = this._validate(data);
+      if (err) return err;
+
+      if (this._students.some((s) => s.studentId === data.studentId.trim().toUpperCase()))
+        return { ok: false, field: "studentId", error: "Student ID already exists." };
+
+      if (this._students.some((s) => s.email === data.email.trim().toLowerCase()))
+        return { ok: false, field: "email", error: "Email already registered." };
+
+      const student = new Student(data);
+      this._students.unshift(student);
+      Storage.save(this._students);
+      state.addActivity("success", `Added ${student.name}`);
+      return { ok: true, student };
+    },
+
+    update(id, data) {
+      const idx = this._students.findIndex((s) => s.id === id);
+      if (idx === -1) return { ok: false, error: "Student not found." };
+
+      const err = this._validate(data);
+      if (err) return err;
+
+      if (this._students.some((s) => s.id !== id && s.studentId === data.studentId.trim().toUpperCase()))
+        return { ok: false, field: "studentId", error: "Student ID already exists." };
+
+      if (this._students.some((s) => s.id !== id && s.email === data.email.trim().toLowerCase()))
+        return { ok: false, field: "email", error: "Email already registered." };
+
+      const existing = this._students[idx];
+      const updated = new Student({ ...existing, ...data, id, attendance: existing.attendance, createdAt: existing.createdAt });
+      this._students[idx] = updated;
+      Storage.save(this._students);
+      state.addActivity("info", `Updated ${updated.name}`);
+      return { ok: true, student: updated };
+    },
+
+    delete(id) {
+      const s = this.getById(id);
+      this._students = this._students.filter((st) => st.id !== id);
+      Storage.save(this._students);
+      if (s) state.addActivity("error", `Removed ${s.name}`);
+    },
+
+    markAttendance(id, status) {
+      const student = this.getById(id);
+      if (!student) return;
+      student.attendance[Utils.today()] = status;
+      Storage.save(this._students);
+      state.addActivity("warning", `${status === "present" ? "✅" : "❌"} ${student.name}: ${status}`);
+    },
+
+    filter(opts = {}) {
+      const { search = "", grade = "all", sort = "", dir = "asc" } = opts;
+      let list = this.getAll();
+
+      if (grade !== "all") list = list.filter((s) => String(s.grade) === String(grade));
+
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        list = list.filter((s) => s.name.toLowerCase().includes(q) || s.studentId.toLowerCase().includes(q));
+      }
+
+      if (sort) {
+        list.sort((a, b) => {
+          let va, vb;
+          if (sort === "name") { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); }
+          if (sort === "grade") { va = a.grade; vb = b.grade; }
+          if (sort === "gpa") { va = a.gpa; vb = b.gpa; }
+          if (va < vb) return dir === "asc" ? -1 : 1;
+          if (va > vb) return dir === "asc" ? 1 : -1;
+          return 0;
+        });
+      }
+
+      return list;
+    },
+
+    stats() {
+      const all = this.getAll();
+      const total = all.length;
+      const avgGpa = total ? all.reduce((s, st) => s + st.gpa, 0) / total : 0;
+      const byGrade = { 9: 0, 10: 0, 11: 0, 12: 0 };
+      all.forEach((s) => { byGrade[s.grade] = (byGrade[s.grade] || 0) + 1; });
+      const topGpa = total ? Math.max(...all.map((s) => s.gpa)) : null;
+      const attPcts = all.map((s) => s.attendancePct).filter((p) => p !== null);
+      const avgAtt = attPcts.length ? Math.round(attPcts.reduce((a, b) => a + b, 0) / attPcts.length) : null;
+      return { total, avgGpa, byGrade, topGpa, avgAtt };
+    },
+
+    exportCSV() {
+      const headers = ["Name", "Student ID", "Email", "Grade", "GPA", "Enrolled", "Attendance %"];
+      const rows = this.getAll().map((s) => [
+        `"${s.name}"`, s.studentId, s.email, s.grade, s.gpa, s.enrollDate,
+        s.attendancePct !== null ? `${s.attendancePct}%` : "N/A",
+      ]);
+      return [headers, ...rows].map((r) => r.join(",")).join("\n");
+    },
+
+    importCSV(csv) {
+      const lines = csv.trim().split("\n").filter(Boolean);
+      const results = { added: 0, skipped: 0, errors: [] };
+      if (lines.length < 2) { results.errors.push("CSV has no data rows."); return results; }
+
+      const firstLine = lines[0].toLowerCase();
+      const startIdx = firstLine.includes("name") || firstLine.includes("student") ? 1 : 0;
+
+      for (let i = startIdx; i < lines.length; i++) {
+        const cols = lines[i].split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
+        if (cols.length < 5) { results.skipped++; continue; }
+        const res = this.add({
+          name: cols[0], studentId: cols[1], email: cols[2],
+          grade: cols[3], gpa: cols[4],
+          enrollDate: cols[5] || Utils.today(),
+        });
+        if (res.ok) results.added++;
+        else { results.skipped++; results.errors.push(`Row ${i + 1}: ${res.error}`); }
+      }
+
+      if (results.added > 0) state.addActivity("info", `Imported ${results.added} students`);
       return results;
-    }
+    },
 
-    // Detect and skip header row
-    const firstLine = lines[0].toLowerCase();
-    const startIdx =
-      firstLine.includes("name") || firstLine.includes("student") ? 1 : 0;
+    _validate(data) {
+      if (!data.name?.trim()) return { ok: false, field: "name", error: "Full name is required." };
+      if (!data.studentId?.trim()) return { ok: false, field: "studentId", error: "Student ID is required." };
+      if (!data.email?.trim()) return { ok: false, field: "email", error: "Email is required." };
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim()))
+        return { ok: false, field: "email", error: "Invalid email format." };
+      if (!data.grade || ![9, 10, 11, 12].includes(Number(data.grade)))
+        return { ok: false, field: "grade", error: "Select a valid grade." };
+      const gpa = parseFloat(data.gpa);
+      if (isNaN(gpa) || gpa < 0 || gpa > 4)
+        return { ok: false, field: "gpa", error: "GPA must be between 0.0 and 4.0." };
+      if (!data.enrollDate) return { ok: false, field: "enrollDate", error: "Enrollment date is required." };
+      return null;
+    },
+  };
 
-    for (let i = startIdx; i < lines.length; i++) {
-      const cols = lines[i]
-        .split(",")
-        .map((c) => c.trim().replace(/^"|"$/g, ""));
-      if (cols.length < 5) {
-        results.skipped++;
-        continue;
-      }
+  /* ═══════════════════════════════════════════════════
+     Seed Data
+  ═══════════════════════════════════════════════════ */
 
-      const data = {
-        name: cols[0],
-        studentId: cols[1],
-        email: cols[2],
-        grade: cols[3],
-        gpa: cols[4],
-        enrollDate: cols[5] || new Date().toISOString().slice(0, 10),
-      };
+  function seedData() {
+    if (StudentManager.getAll().length > 0) return;
 
-      const res = this.add(data);
-      if (res.ok) results.added++;
-      else {
-        results.skipped++;
-        results.errors.push(`Row ${i + 1}: ${res.error}`);
-      }
-    }
-    return results;
-  }
-}
+    const samples = [
+      { name: "Emma Watson", studentId: "STU-001", email: "emma.watson@school.edu", grade: 12, gpa: 3.8, enrollDate: "2021-09-01" },
+      { name: "James Wilson", studentId: "STU-002", email: "james.wilson@school.edu", grade: 11, gpa: 3.2, enrollDate: "2022-09-01" },
+      { name: "Sophia Lee", studentId: "STU-003", email: "sophia.lee@school.edu", grade: 10, gpa: 3.9, enrollDate: "2023-09-01" },
+      { name: "Michael Brown", studentId: "STU-004", email: "michael.brown@school.edu", grade: 12, gpa: 2.8, enrollDate: "2021-09-01" },
+      { name: "Olivia Chen", studentId: "STU-005", email: "olivia.chen@school.edu", grade: 9, gpa: 3.5, enrollDate: "2024-09-01" },
+    ];
 
-/* ════════════════════════════════════════════════
-   3. UI Controller
-════════════════════════════════════════════════ */
-class UI {
-  constructor(manager) {
-    /** @type {StudentManager} */
-    this.manager = manager;
-
-    // State
-    this.currentView = "dashboard";
-    this.currentFilter = "all";
-    this.searchQuery = "";
-    this.sortCol = "";
-    this.sortDir = "asc";
-    this.pendingDeleteId = null;
-
-    this._bindElements();
-    this._bindEvents();
-    this.switchView("dashboard");
-  }
-
-  /* ── Element refs ── */
-  _bindElements() {
-    this.$ = (id) => document.getElementById(id);
-    this.e = {
-      // sidebar
-      navItems: document.querySelectorAll(".nav-item"),
-      hamburger: this.$("hamburger"),
-      sidebar: this.$("sidebar"),
-      exportBtn: this.$("exportBtn"),
-      importInput: this.$("importInput"),
-      pageTitle: this.$("pageTitle"),
-
-      // views
-      views: document.querySelectorAll(".view"),
-
-      // dashboard
-      statTotal: this.$("statTotal"),
-      statAvgGpa: this.$("statAvgGpa"),
-      statAttendance: this.$("statAttendance"),
-      statTopGpa: this.$("statTopGpa"),
-      gradeBars: this.$("gradeBars"),
-      recentStudents: this.$("recentStudents"),
-
-      // students
-      searchInput: this.$("searchInput"),
-      searchClear: this.$("searchClear"),
-      filterChips: this.$("filterChips"),
-      studentCount: this.$("studentCount"),
-      studentsBody: this.$("studentsBody"),
-      studentsTable: this.$("studentsTable"),
-      emptyState: this.$("emptyState"),
-
-      // attendance
-      attDate: this.$("attDate"),
-      attPresent: this.$("attPresent"),
-      attAbsent: this.$("attAbsent"),
-      attendanceGrid: this.$("attendanceGrid"),
-
-      // form
-      studentForm: this.$("studentForm"),
-      editingId: this.$("editingId"),
-      formTitle: this.$("formTitle"),
-      submitBtn: this.$("submitBtn"),
-      cancelEdit: this.$("cancelEdit"),
-      fName: this.$("fName"),
-      fId: this.$("fId"),
-      fEmail: this.$("fEmail"),
-      fGrade: this.$("fGrade"),
-      fGpa: this.$("fGpa"),
-      fDate: this.$("fDate"),
-
-      // modals
-      detailOverlay: this.$("detailOverlay"),
-      detailClose: this.$("detailClose"),
-      detailAvatar: this.$("detailAvatar"),
-      detailName: this.$("detailName"),
-      detailId: this.$("detailId"),
-      detailGrid: this.$("detailGrid"),
-      confirmOverlay: this.$("confirmOverlay"),
-      confirmMsg: this.$("confirmMsg"),
-      confirmCancel: this.$("confirmCancel"),
-      confirmOk: this.$("confirmOk"),
-
-      toastContainer: this.$("toastContainer"),
-    };
-  }
-
-  /* ── Event wiring ── */
-  _bindEvents() {
-    const e = this.e;
-
-    // Nav
-    e.navItems.forEach((item) => {
-      item.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        this.switchView(item.dataset.view);
-        // Auto-close sidebar on mobile
-        if (window.innerWidth <= 860) e.sidebar.classList.remove("open");
-      });
-    });
-
-    // Hamburger
-    e.hamburger.addEventListener("click", () =>
-      e.sidebar.classList.toggle("open"),
-    );
-    document.addEventListener("click", (ev) => {
-      if (
-        window.innerWidth <= 860 &&
-        !e.sidebar.contains(ev.target) &&
-        !e.hamburger.contains(ev.target)
-      ) {
-        e.sidebar.classList.remove("open");
+    const today = new Date();
+    samples.forEach((data) => {
+      const result = StudentManager.add(data);
+      if (!result.ok || !result.student) return;
+      for (let d = 10; d >= 1; d--) {
+        const dt = new Date(today);
+        dt.setDate(dt.getDate() - d);
+        const key = Utils.isoDate(dt);
+        const status = Math.random() > 0.15 ? "present" : "absent";
+        result.student.attendance[key] = status;
       }
     });
-
-    // Search
-    e.searchInput.addEventListener("input", () => {
-      this.searchQuery = e.searchInput.value;
-      e.searchClear.style.display = this.searchQuery ? "block" : "none";
-      this._renderStudentsTable();
-    });
-    e.searchClear.addEventListener("click", () => {
-      e.searchInput.value = "";
-      this.searchQuery = "";
-      e.searchClear.style.display = "none";
-      this._renderStudentsTable();
-    });
-
-    // Filter chips
-    e.filterChips.addEventListener("click", (ev) => {
-      const chip = ev.target.closest(".chip");
-      if (!chip) return;
-      e.filterChips
-        .querySelectorAll(".chip")
-        .forEach((c) => c.classList.remove("active"));
-      chip.classList.add("active");
-      this.currentFilter = chip.dataset.grade;
-      this._renderStudentsTable();
-    });
-
-    // Sort columns
-    e.studentsTable.querySelectorAll("th.sortable").forEach((th) => {
-      th.addEventListener("click", () => {
-        const col = th.dataset.sort;
-        if (this.sortCol === col) {
-          this.sortDir = this.sortDir === "asc" ? "desc" : "asc";
-        } else {
-          this.sortCol = col;
-          this.sortDir = "asc";
-        }
-        this._updateSortIcons();
-        this._renderStudentsTable();
-      });
-    });
-
-    // Form submit
-    e.studentForm.addEventListener("submit", (ev) => {
-      ev.preventDefault();
-      this._handleFormSubmit();
-    });
-
-    // Cancel edit
-    e.cancelEdit.addEventListener("click", () => this._resetForm());
-
-    // Export
-    e.exportBtn.addEventListener("click", () => this._exportCSV());
-
-    // Import
-    e.importInput.addEventListener("change", (ev) => this._importCSV(ev));
-
-    // Detail modal close
-    e.detailClose.addEventListener("click", () =>
-      this._closeModal(e.detailOverlay),
-    );
-    e.detailOverlay.addEventListener("click", (ev) => {
-      if (ev.target === e.detailOverlay) this._closeModal(e.detailOverlay);
-    });
-
-    // Confirm modal
-    e.confirmCancel.addEventListener("click", () =>
-      this._closeModal(e.confirmOverlay),
-    );
-    e.confirmOk.addEventListener("click", () => {
-      if (this.pendingDeleteId) {
-        const s = this.manager.getById(this.pendingDeleteId);
-        this.manager.delete(this.pendingDeleteId);
-        this.pendingDeleteId = null;
-        this._closeModal(e.confirmOverlay);
-        this._renderAll();
-        this.showToast(`${s?.name || "Student"} removed.`, "success");
-      }
-    });
-
-    // Keyboard: close modals on Escape
-    document.addEventListener("keydown", (ev) => {
-      if (ev.key === "Escape") {
-        if (e.detailOverlay.classList.contains("open"))
-          this._closeModal(e.detailOverlay);
-        if (e.confirmOverlay.classList.contains("open"))
-          this._closeModal(e.confirmOverlay);
-      }
-    });
+    Storage.save(StudentManager.getAll());
+    state.activity.length = 0;
   }
 
-  /* ════════════════════════════════════
-     View switching
-  ════════════════════════════════════ */
-  switchView(name) {
-    this.currentView = name;
+  /* ═══════════════════════════════════════════════════
+     UI — Rendering
+  ═══════════════════════════════════════════════════ */
 
-    // Update nav
-    this.e.navItems.forEach((item) => {
-      item.classList.toggle("active", item.dataset.view === name);
-    });
+  const $ = (sel, ctx = document) => ctx.querySelector(sel);
+  const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
 
-    // Show view
-    this.e.views.forEach((v) => {
-      v.classList.toggle("active", v.id === `view-${name}`);
-    });
-
-    // Page title
-    const titles = {
-      dashboard: "Dashboard",
-      students: "Students",
-      attendance: "Attendance",
-      add: "Add Student",
-    };
-    this.e.pageTitle.textContent = titles[name] || "";
-
-    // Render the relevant view
-    if (name === "dashboard") this._renderDashboard();
-    if (name === "students") this._renderStudentsTable();
-    if (name === "attendance") this._renderAttendance();
-  }
-
-  /* ════════════════════════════════════
-     Dashboard
-  ════════════════════════════════════ */
-  _renderDashboard() {
-    const s = this.manager.stats();
-    const e = this.e;
-
-    // Stat cards
-    this._animateValue(e.statTotal, 0, s.total, 600, (v) => v);
-    this._animateValue(e.statAvgGpa, 0, s.avgGpa, 600, (v) => v.toFixed(2));
-    e.statAttendance.textContent = s.avgAtt !== null ? `${s.avgAtt}%` : "—";
-    e.statTopGpa.textContent = s.topGpa !== null ? s.topGpa.toFixed(2) : "—";
-
-    // Grade bars
-    const maxCount = Math.max(...Object.values(s.byGrade), 1);
-    e.gradeBars.innerHTML = [9, 10, 11, 12]
-      .map(
-        (g) => `
-      <div class="grade-bar-row">
-        <span class="grade-bar-label">Grade ${g}</span>
-        <div class="grade-bar-track">
-          <div class="grade-bar-fill" style="width:${(s.byGrade[g] / maxCount) * 100}%"></div>
+  function renderLayout() {
+    const app = $("#app");
+    app.innerHTML = `
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+          <div class="sidebar-brand-icon"><i class="fa-solid fa-atom"></i></div>
+          <div>
+            <div class="sidebar-brand-name">Quantio</div>
+            <div class="sidebar-brand-sub">Student Intelligence</div>
+          </div>
         </div>
-        <span class="grade-bar-count">${s.byGrade[g]}</span>
-      </div>
-    `,
-      )
-      .join("");
+        <nav class="sidebar-nav">
+          <a href="#" class="nav-item active" data-view="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></a>
+          <a href="#" class="nav-item" data-view="students"><i class="fa-solid fa-users"></i><span>Students</span></a>
+          <a href="#" class="nav-item" data-view="attendance"><i class="fa-solid fa-calendar-check"></i><span>Attendance</span></a>
+          <a href="#" class="nav-item" data-view="add"><i class="fa-solid fa-user-plus"></i><span>Add Student</span></a>
+        </nav>
+        <div class="sidebar-footer">
+          <button class="sidebar-btn" id="exportBtn"><i class="fa-solid fa-file-arrow-down"></i><span>Export CSV</span></button>
+          <label class="sidebar-btn" for="importInput"><i class="fa-solid fa-file-arrow-up"></i><span>Import CSV</span></label>
+          <input type="file" id="importInput" accept=".csv" style="display:none" />
+        </div>
+      </aside>
 
-    // Recent students (last 5)
-    const recent = this.manager.getAll().slice(0, 5);
-    e.recentStudents.innerHTML = recent.length
-      ? recent
-          .map(
-            (st) => `
-          <li class="recent-li" onclick="app.openDetailModal('${st.id}')">
-            <div class="recent-li-avatar">${this._escHtml(st.initials)}</div>
-            <div>
-              <div class="recent-li-name">${this._escHtml(st.name)}</div>
-              <div class="recent-li-grade">Grade ${st.grade}</div>
+      <div class="main" id="main">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button class="hamburger" id="hamburger"><i class="fa-solid fa-bars"></i></button>
+            <h1 class="page-title" id="pageTitle">Dashboard</h1>
+          </div>
+          <div class="topbar-right">
+            <div class="search-wrap">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="searchInput" placeholder="Search name or ID…" />
+              <button class="search-clear" id="searchClear"><i class="fa-solid fa-xmark"></i></button>
+              <span class="search-hint">/</span>
             </div>
-            <span class="recent-li-gpa">${st.gpa.toFixed(2)}</span>
-          </li>
-        `,
-          )
-          .join("")
-      : '<li style="color:var(--text-dim);font-size:14px;padding:10px 0">No students yet.</li>';
+            <button class="icon-btn" id="themeToggle" title="Toggle theme"><i class="fa-solid fa-moon"></i></button>
+            <button class="icon-btn" id="shortcutsToggle" title="Keyboard shortcuts"><i class="fa-solid fa-keyboard"></i></button>
+            <div class="avatar-btn">Q</div>
+          </div>
+        </header>
+
+        <section class="view active" id="view-dashboard"></section>
+        <section class="view" id="view-students"></section>
+        <section class="view" id="view-attendance"></section>
+        <section class="view" id="view-add"></section>
+      </div>
+
+      <div class="modal-overlay" id="detailOverlay">
+        <div class="modal">
+          <button class="modal-close" id="detailClose"><i class="fa-solid fa-xmark"></i></button>
+          <div class="modal-detail-header">
+            <div class="detail-avatar" id="detailAvatar"></div>
+            <div>
+              <h2 class="detail-name" id="detailName"></h2>
+              <span class="detail-id" id="detailId"></span>
+            </div>
+          </div>
+          <div class="detail-grid" id="detailGrid"></div>
+        </div>
+      </div>
+
+      <div class="modal-overlay" id="confirmOverlay">
+        <div class="modal modal-sm">
+          <div class="confirm-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          <h3 class="confirm-title">Delete Student?</h3>
+          <p class="confirm-msg" id="confirmMsg"></p>
+          <div class="confirm-actions">
+            <button class="btn-ghost btn-sm" id="confirmCancel">Cancel</button>
+            <button class="btn-danger btn-sm" id="confirmOk">Delete</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="shortcuts-panel" id="shortcutsPanel">
+        <h3>Keyboard Shortcuts</h3>
+        <div class="shortcut-row"><span>Dashboard</span><kbd>1</kbd></div>
+        <div class="shortcut-row"><span>Students</span><kbd>2</kbd></div>
+        <div class="shortcut-row"><span>Attendance</span><kbd>3</kbd></div>
+        <div class="shortcut-row"><span>Add Student</span><kbd>N</kbd></div>
+        <div class="shortcut-row"><span>Search</span><kbd>/</kbd></div>
+        <div class="shortcut-row"><span>Toggle Theme</span><kbd>T</kbd></div>
+        <div class="shortcut-row"><span>Close Modal</span><kbd>Esc</kbd></div>
+      </div>
+
+      <div class="toast-container" id="toastContainer"></div>
+    `;
+
+    state.setTheme(state.theme);
   }
 
-  /** Animate a number from 0 to target */
-  _animateValue(el, from, to, ms, fmt) {
-    if (to === 0) {
-      el.textContent = fmt(0);
-      return;
-    }
+  /* ─── Dashboard ─── */
+
+  function renderDashboard() {
+    const el = $("#view-dashboard");
+    const s = StudentManager.stats();
+    const recent = StudentManager.getAll().slice(0, 5);
+    const all = StudentManager.getAll();
+
+    const avgAtt = s.avgAtt !== null ? s.avgAtt : 0;
+    const ringDash = 226.2 - (226.2 * avgAtt) / 100;
+
+    el.innerHTML = `
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-icon accent-primary"><i class="fa-solid fa-users"></i></div>
+          <div>
+            <span class="stat-label">Total Students</span>
+            <span class="stat-value" id="statTotal">${s.total}</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon accent-secondary"><i class="fa-solid fa-star"></i></div>
+          <div>
+            <span class="stat-label">Average GPA</span>
+            <span class="stat-value" id="statAvg">${s.avgGpa.toFixed(2)}</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon accent-accent"><i class="fa-solid fa-trophy"></i></div>
+          <div>
+            <span class="stat-label">Top GPA</span>
+            <span class="stat-value" id="statTop">${s.topGpa !== null ? s.topGpa.toFixed(2) : "—"}</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon accent-warning"><i class="fa-solid fa-calendar-check"></i></div>
+          <div>
+            <span class="stat-label">Avg. Attendance</span>
+            <span class="stat-value" id="statAtt">${s.avgAtt !== null ? s.avgAtt + "%" : "—"}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-row">
+        <div class="dash-card">
+          <h3 class="dash-card-title"><i class="fa-solid fa-chart-column"></i> Students by Grade</h3>
+          <div class="grade-bars">
+            ${[9, 10, 11, 12]
+              .map(
+                (g) => `
+              <div class="grade-bar-row">
+                <span class="grade-bar-label">Grade ${g}</span>
+                <div class="grade-bar-track">
+                  <div class="grade-bar-fill" style="width:${Math.max((s.byGrade[g] / Math.max(...Object.values(s.byGrade), 1)) * 100, 0)}%"></div>
+                </div>
+                <span class="grade-bar-count">${s.byGrade[g]}</span>
+              </div>`
+              )
+              .join("")}
+          </div>
+        </div>
+
+        <div class="dash-card">
+          <h3 class="dash-card-title"><i class="fa-solid fa-clock-rotate-left"></i> Recently Added</h3>
+          <ul class="recent-ul">
+            ${recent.length
+              ? recent
+                  .map(
+                    (st) => `
+                <li class="recent-li" data-id="${st.id}">
+                  <div class="recent-li-avatar">${Utils.esc(st.initials)}</div>
+                  <div>
+                    <div class="recent-li-name">${Utils.esc(st.name)}</div>
+                    <div class="recent-li-sub">Grade ${st.grade}</div>
+                  </div>
+                  <span class="recent-li-gpa">${st.gpa.toFixed(2)}</span>
+                </li>`
+                  )
+                  .join("")
+              : '<li style="color:var(--text-dim);font-size:13px;padding:12px 0">No students yet. <a href="#" data-view="add" style="color:var(--primary-light)">Add one</a>.</li>'}
+          </ul>
+        </div>
+      </div>
+
+      <div class="activity-timeline" id="activityTimeline">
+        <h3 class="activity-title"><i class="fa-solid fa-bolt"></i> Recent Activity</h3>
+        <div class="activity-list">
+          ${state.activity.length
+            ? state.activity
+                .slice(0, 10)
+                .map(
+                  (a) => `
+                <div class="activity-item">
+                  <span class="activity-dot ${a.type}"></span>
+                  <span class="activity-text">${Utils.esc(a.text)}</span>
+                  <span class="activity-time">${a.time}</span>
+                </div>`
+                )
+                .join("")
+            : '<div style="color:var(--text-dim);font-size:13px;padding:8px 0">No activity yet.</div>'}
+        </div>
+      </div>
+    `;
+
+    animateValue("statTotal", s.total);
+    animateValue("statAvg", s.avgGpa);
+  }
+
+  function animateValue(id, target) {
+    const el = document.getElementById(id);
+    if (!el || target === 0) return;
     const start = performance.now();
-    const tick = (now) => {
-      const p = Math.min((now - start) / ms, 1);
-      const v = from + (to - from) * this._easeOut(p);
-      el.textContent = fmt(v);
+    const from = 0;
+    const dur = 500;
+
+    function tick(now) {
+      const p = Math.min((now - start) / dur, 1);
+      const v = from + (target - from) * (1 - Math.pow(1 - p, 3));
+      el.textContent = id === "statAvg" ? v.toFixed(2) : Math.round(v);
       if (p < 1) requestAnimationFrame(tick);
-    };
+    }
     requestAnimationFrame(tick);
   }
-  _easeOut(t) {
-    return 1 - Math.pow(1 - t, 3);
+
+  /* ─── Students View ─── */
+
+  function renderStudentsView() {
+    const el = $("#view-students");
+    const { search, grade, sort, dir } = state.filters;
+    const list = StudentManager.filter({ search, grade, sort, dir });
+
+    el.innerHTML = `
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="filter-chips" id="filterChips">
+            <button class="chip ${grade === "all" ? "active" : ""}" data-grade="all">All</button>
+            <button class="chip ${grade === "9" ? "active" : ""}" data-grade="9">Grade 9</button>
+            <button class="chip ${grade === "10" ? "active" : ""}" data-grade="10">Grade 10</button>
+            <button class="chip ${grade === "11" ? "active" : ""}" data-grade="11">Grade 11</button>
+            <button class="chip ${grade === "12" ? "active" : ""}" data-grade="12">Grade 12</button>
+          </div>
+        </div>
+        <span class="student-count">${list.length} student${list.length !== 1 ? "s" : ""}</span>
+      </div>
+
+      <div class="table-wrap">
+        <table class="students-table" id="studentsTable">
+          <thead>
+            <tr>
+              <th class="sortable ${sort === "name" ? (dir === "asc" ? "sort-asc" : "sort-desc") : ""}" data-sort="name">
+                Name <i class="fa-solid ${sort === "name" ? `fa-sort-${dir === "asc" ? "up" : "down"}` : "fa-sort"}"></i>
+              </th>
+              <th>Student ID</th>
+              <th>Email</th>
+              <th class="sortable ${sort === "grade" ? (dir === "asc" ? "sort-asc" : "sort-desc") : ""}" data-sort="grade">
+                Grade <i class="fa-solid ${sort === "grade" ? `fa-sort-${dir === "asc" ? "up" : "down"}` : "fa-sort"}"></i>
+              </th>
+              <th class="sortable ${sort === "gpa" ? (dir === "asc" ? "sort-asc" : "sort-desc") : ""}" data-sort="gpa">
+                GPA <i class="fa-solid ${sort === "gpa" ? `fa-sort-${dir === "asc" ? "up" : "down"}` : "fa-sort"}"></i>
+              </th>
+              <th>Enrolled</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="studentsBody">
+            ${list.length ? list.map(renderStudentRow).join("") : ""}
+          </tbody>
+        </table>
+        <div class="empty-state ${list.length ? "" : "visible"}">
+          <div class="empty-icon"><i class="fa-solid fa-users-slash"></i></div>
+          <h3>No students found</h3>
+          <p>Try adjusting your search or add a new student.</p>
+          <button class="btn-primary btn-sm" data-view="add"><i class="fa-solid fa-plus"></i> Add Student</button>
+        </div>
+      </div>
+    `;
   }
 
-  /* ════════════════════════════════════
-     Students Table
-  ════════════════════════════════════ */
-  _renderStudentsTable() {
-    const list = this.manager.filter({
-      search: this.searchQuery,
-      grade: this.currentFilter,
-      sort: this.sortCol,
-      dir: this.sortDir,
-    });
-
-    this.e.studentCount.textContent = `${list.length} student${list.length !== 1 ? "s" : ""}`;
-
-    if (!list.length) {
-      this.e.studentsBody.innerHTML = "";
-      this.e.emptyState.classList.add("visible");
-      return;
-    }
-    this.e.emptyState.classList.remove("visible");
-
-    this.e.studentsBody.innerHTML = list
-      .map((s) => this._renderRow(s))
-      .join("");
-  }
-
-  _renderRow(s) {
-    const pct = s.attendancePercentage;
-    const pctStr = pct !== null ? `${pct}%` : "—";
-    const date = s.enrollDate
-      ? new Date(s.enrollDate).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        })
-      : "—";
-
+  function renderStudentRow(s) {
+    const pct = s.attendancePct;
+    const date = s.enrollDate ? Utils.dateStr(s.enrollDate) : "—";
     return `
-      <tr onclick="app.openDetailModal('${s.id}')">
+      <tr data-id="${s.id}">
         <td>
           <div class="td-name">
-            <div class="td-avatar">${this._escHtml(s.initials)}</div>
-            ${this._escHtml(s.name)}
+            <div class="td-avatar">${Utils.esc(s.initials)}</div>
+            ${Utils.esc(s.name)}
           </div>
         </td>
-        <td><span class="td-id">${this._escHtml(s.studentId)}</span></td>
-        <td><span class="td-email">${this._escHtml(s.email)}</span></td>
+        <td><span class="td-id">${Utils.esc(s.studentId)}</span></td>
+        <td><span class="td-email">${Utils.esc(s.email)}</span></td>
         <td><span class="grade-badge g${s.grade}">Grade ${s.grade}</span></td>
         <td><span class="gpa-cell ${s.gpaTier}">${s.gpa.toFixed(2)}</span></td>
         <td><span class="td-date">${date}</span></td>
-        <td class="actions-cell" onclick="event.stopPropagation()">
-          <button class="btn-icon edit" title="Edit" onclick="app.openEdit('${s.id}')">
-            <i class="fa-solid fa-pen-to-square"></i>
-          </button>
-          <button class="btn-icon delete" title="Delete" onclick="app.confirmDelete('${s.id}')">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
+        <td class="actions-cell">
+          <button class="btn-icon edit" data-action="edit" data-id="${s.id}" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
+          <button class="btn-icon delete" data-action="delete" data-id="${s.id}" title="Delete"><i class="fa-solid fa-trash-can"></i></button>
         </td>
       </tr>
     `;
   }
 
-  _updateSortIcons() {
-    this.e.studentsTable.querySelectorAll("th.sortable").forEach((th) => {
-      th.classList.remove("sort-asc", "sort-desc");
-      const icon = th.querySelector("i");
-      icon.className = "fa-solid fa-sort";
-      if (th.dataset.sort === this.sortCol) {
-        th.classList.add(this.sortDir === "asc" ? "sort-asc" : "sort-desc");
-        icon.className = `fa-solid fa-sort-${this.sortDir === "asc" ? "up" : "down"}`;
-      }
-    });
-  }
+  /* ─── Attendance View ─── */
 
-  /* ════════════════════════════════════
-     Attendance
-  ════════════════════════════════════ */
-  _renderAttendance() {
+  function renderAttendanceView() {
+    const el = $("#view-attendance");
     const today = new Date();
-    const todayK = today.toISOString().slice(0, 10);
-    this.e.attDate.textContent = today.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-
-    const all = this.manager.getAll();
-    const present = all.filter(
-      (s) => s.attendance[todayK] === "present",
-    ).length;
+    const todayK = Utils.today();
+    const all = StudentManager.getAll();
+    const present = all.filter((s) => s.attendance[todayK] === "present").length;
     const absent = all.filter((s) => s.attendance[todayK] === "absent").length;
 
-    this.e.attPresent.textContent = `${present} present`;
-    this.e.attAbsent.textContent = `${absent} absent`;
-
-    if (!all.length) {
-      this.e.attendanceGrid.innerHTML =
-        '<p style="color:var(--text-dim);font-size:14px">No students yet.</p>';
-      return;
-    }
-
-    this.e.attendanceGrid.innerHTML = all
-      .map((s) => {
-        const todayStatus = s.attendance[todayK] || "";
-        const pct = s.attendancePercentage;
-        const pctStr = pct !== null ? `${pct}% overall` : "No records";
-        const pctClass =
-          pct === null ? "" : pct >= 80 ? "high" : pct >= 60 ? "mid" : "low";
-
-        return `
-        <div class="att-card ${todayStatus}" data-sid="${s.id}">
-          <div class="att-card-avatar">${this._escHtml(s.initials)}</div>
-          <div class="att-card-info">
-            <div class="att-card-name">${this._escHtml(s.name)}</div>
-            <div class="att-card-sub">Grade ${s.grade} &middot; <span class="att-pct ${pctClass}">${pctStr}</span></div>
-          </div>
-          <div class="att-toggle">
-            <button class="att-btn ${todayStatus === "present" ? "active-p" : ""}"
-              onclick="app.markAtt('${s.id}','present')">P</button>
-            <button class="att-btn ${todayStatus === "absent" ? "active-a" : ""}"
-              onclick="app.markAtt('${s.id}','absent')">A</button>
-          </div>
+    el.innerHTML = `
+      <div class="attendance-header">
+        <span class="att-date">${today.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
+        <div class="att-actions">
+          <button class="btn-ghost btn-sm" id="markAllPresent"><i class="fa-solid fa-check"></i> All Present</button>
+          <button class="btn-ghost btn-sm" id="markAllAbsent"><i class="fa-solid fa-xmark"></i> All Absent</button>
         </div>
-      `;
-      })
-      .join("");
+      </div>
+      <div class="attendance-header" style="margin-top:-8px">
+        <div class="att-summary">
+          <span class="present-count">${present} present</span>
+          <span class="att-divider">·</span>
+          <span class="absent-count">${absent} absent</span>
+          <span class="att-divider">·</span>
+          <span style="color:var(--text-dim);font-size:13px">${all.length - present - absent} unmarked</span>
+        </div>
+      </div>
+      <div class="attendance-grid" id="attendanceGrid">
+        ${all.length
+          ? all
+              .map((s) => {
+                const todayStatus = s.attendance[todayK] || "";
+                const pct = s.attendancePct;
+                const pctStr = pct !== null ? `${pct}% overall` : "No records";
+                const pctCls = pct === null ? "" : pct >= 80 ? "high" : pct >= 60 ? "mid" : "low";
+                return `
+                  <div class="att-card ${todayStatus}" data-id="${s.id}">
+                    <div class="att-card-avatar">${Utils.esc(s.initials)}</div>
+                    <div class="att-card-info">
+                      <div class="att-card-name">${Utils.esc(s.name)}</div>
+                      <div class="att-card-sub">Grade ${s.grade} · <span class="att-pct ${pctCls}">${pctStr}</span></div>
+                    </div>
+                    <div class="att-toggle">
+                      <button class="att-btn ${todayStatus === "present" ? "active-p" : ""}" data-action="present" data-id="${s.id}">P</button>
+                      <button class="att-btn ${todayStatus === "absent" ? "active-a" : ""}" data-action="absent" data-id="${s.id}">A</button>
+                    </div>
+                  </div>`;
+              })
+              .join("")
+          : '<p style="color:var(--text-dim);font-size:14px;grid-column:1/-1;text-align:center;padding:48px 0">No students yet.</p>'}
+      </div>
+    `;
   }
 
-  /* ════════════════════════════════════
-     Form (Add / Edit)
-  ════════════════════════════════════ */
-  _handleFormSubmit() {
-    this._clearFormErrors();
+  /* ─── Form View ─── */
+
+  function renderFormView() {
+    const el = $("#view-add");
+    const editId = state.editingId;
+    const s = editId ? StudentManager.getById(editId) : null;
+    const isEdit = !!s;
+
+    el.innerHTML = `
+      <div class="form-card">
+        <h2 class="form-title"><i class="fa-solid ${isEdit ? "fa-floppy-disk" : "fa-user-plus"}"></i> ${isEdit ? "Edit Student" : "Add Student"}</h2>
+        <form id="studentForm" novalidate>
+          <input type="hidden" id="editingId" value="${editId || ""}" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="fName">Full Name <span class="req">*</span></label>
+              <input type="text" id="fName" placeholder="Emma Watson" value="${isEdit ? Utils.esc(s.name) : ""}" />
+              <span class="form-error" id="errName"></span>
+            </div>
+            <div class="form-group">
+              <label for="fId">Student ID <span class="req">*</span></label>
+              <input type="text" id="fId" placeholder="STU-001" value="${isEdit ? Utils.esc(s.studentId) : ""}" />
+              <span class="form-error" id="errId"></span>
+            </div>
+            <div class="form-group">
+              <label for="fEmail">Email <span class="req">*</span></label>
+              <input type="email" id="fEmail" placeholder="emma@school.edu" value="${isEdit ? Utils.esc(s.email) : ""}" />
+              <span class="form-error" id="errEmail"></span>
+            </div>
+            <div class="form-group">
+              <label for="fGrade">Grade Level <span class="req">*</span></label>
+              <select id="fGrade">
+                <option value="">Select grade…</option>
+                ${[9, 10, 11, 12]
+                  .map(
+                    (g) =>
+                      `<option value="${g}" ${isEdit && s.grade === g ? "selected" : ""}>Grade ${g}</option>`
+                  )
+                  .join("")}
+              </select>
+              <span class="form-error" id="errGrade"></span>
+            </div>
+            <div class="form-group">
+              <label for="fGpa">GPA (0.0–4.0) <span class="req">*</span></label>
+              <input type="number" id="fGpa" placeholder="3.50" step="0.01" min="0" max="4" value="${isEdit ? s.gpa : ""}" />
+              <span class="form-error" id="errGpa"></span>
+            </div>
+            <div class="form-group">
+              <label for="fDate">Enrollment Date <span class="req">*</span></label>
+              <input type="date" id="fDate" value="${isEdit ? s.enrollDate : ""}" />
+              <span class="form-error" id="errDate"></span>
+            </div>
+          </div>
+          <div class="form-actions">
+            ${isEdit ? '<button type="button" class="btn-ghost btn-sm" id="cancelEdit">Cancel</button>' : ""}
+            <button type="submit" class="btn-primary btn-sm">
+              <i class="fa-solid ${isEdit ? "fa-floppy-disk" : "fa-plus"}"></i> ${isEdit ? "Save Changes" : "Add Student"}
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+  }
+
+  /* ═══════════════════════════════════════════════════
+     UI — Event Handling
+  ═══════════════════════════════════════════════════ */
+
+  function bindEvents() {
+    // Navigation
+    document.addEventListener("click", (ev) => {
+      const item = ev.target.closest(".nav-item");
+      if (item) {
+        ev.preventDefault();
+        switchView(item.dataset.view);
+        if (window.innerWidth <= 860) $("#sidebar").classList.remove("open");
+      }
+    });
+
+    // Hamburger
+    $("#hamburger").addEventListener("click", () => {
+      $("#sidebar").classList.toggle("open");
+    });
+
+    // Close sidebar on outside click (mobile)
+    document.addEventListener("click", (ev) => {
+      if (window.innerWidth <= 860 && !$("#sidebar").contains(ev.target) && !$("#hamburger").contains(ev.target)) {
+        $("#sidebar").classList.remove("open");
+      }
+    });
+
+    // Search
+    $("#searchInput").addEventListener("input", (ev) => {
+      state.setFilters({ search: ev.target.value });
+      const clear = $("#searchClear");
+      clear.classList.toggle("visible", !!ev.target.value);
+      if (state.view !== "students") switchView("students");
+      else renderStudentsView();
+    });
+
+    $("#searchClear").addEventListener("click", () => {
+      const input = $("#searchInput");
+      input.value = "";
+      state.setFilters({ search: "" });
+      $("#searchClear").classList.remove("visible");
+      if (state.view !== "students") switchView("students");
+      else renderStudentsView();
+    });
+
+    // Filter chips (delegated)
+    $("#view-students").addEventListener("click", (ev) => {
+      const chip = ev.target.closest(".chip");
+      if (!chip) return;
+      $$(".chip").forEach((c) => c.classList.remove("active"));
+      chip.classList.add("active");
+      state.setFilters({ grade: chip.dataset.grade });
+      renderStudentsView();
+    });
+
+    // Sort columns (delegated)
+    $("#view-students").addEventListener("click", (ev) => {
+      const th = ev.target.closest("th.sortable");
+      if (!th) return;
+      const col = th.dataset.sort;
+      const { sort, dir } = state.filters;
+      if (sort === col) {
+        state.filters.dir = dir === "asc" ? "desc" : "asc";
+      } else {
+        state.filters.sort = col;
+        state.filters.dir = "asc";
+      }
+      renderStudentsView();
+    });
+
+    // Student row click -> detail
+    $("#view-students").addEventListener("click", (ev) => {
+      const row = ev.target.closest("tr[data-id]");
+      if (!row || ev.target.closest(".actions-cell")) return;
+      openDetail(row.dataset.id);
+    });
+
+    // Action buttons (edit/delete)
+    $("#view-students").addEventListener("click", (ev) => {
+      const btn = ev.target.closest("[data-action]");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      if (btn.dataset.action === "edit") {
+        state.editingId = id;
+        state.view = "add";
+        renderCurrentView();
+        updateNavAndTitle();
+        renderFormView();
+        bindFormEvents();
+      }
+      if (btn.dataset.action === "delete") {
+        openConfirm(id);
+      }
+    });
+
+    // Attendance marking (delegated)
+    $("#view-attendance").addEventListener("click", (ev) => {
+      const btn = ev.target.closest(".att-btn[data-action]");
+      if (!btn) return;
+      StudentManager.markAttendance(btn.dataset.id, btn.dataset.action);
+      renderAttendanceView();
+      showToast("Attendance recorded.", "info");
+    });
+
+    // Recent student click
+    document.addEventListener("click", (ev) => {
+      const li = ev.target.closest(".recent-li[data-id]");
+      if (li) openDetail(li.dataset.id);
+    });
+
+    // Link to add student from empty state
+    document.addEventListener("click", (ev) => {
+      const link = ev.target.closest("[data-view]");
+      if (link && link.tagName === "A") {
+        ev.preventDefault();
+        switchView(link.dataset.view);
+      }
+    });
+
+    // Empty state add button
+    document.addEventListener("click", (ev) => {
+      const btn = ev.target.closest(".empty-state .btn-primary[data-view]");
+      if (btn) switchView(btn.dataset.view);
+    });
+
+    // Theme toggle
+    $("#themeToggle").addEventListener("click", () => {
+      state.toggleTheme();
+      $("#themeToggle i").className = `fa-solid ${state.theme === "dark" ? "fa-moon" : "fa-sun"}`;
+    });
+
+    // Shortcuts panel
+    $("#shortcutsToggle").addEventListener("click", () => {
+      $("#shortcutsPanel").classList.toggle("open");
+    });
+
+    document.addEventListener("click", (ev) => {
+      const panel = $("#shortcutsPanel");
+      if (panel.classList.contains("open") && !ev.target.closest("#shortcutsPanel") && !ev.target.closest("#shortcutsToggle")) {
+        panel.classList.remove("open");
+      }
+    });
+
+    // Modal close
+    $("#detailClose").addEventListener("click", () => closeModal("detailOverlay"));
+    $("#detailOverlay").addEventListener("click", (ev) => {
+      if (ev.target === $("#detailOverlay")) closeModal("detailOverlay");
+    });
+
+    $("#confirmCancel").addEventListener("click", () => closeModal("confirmOverlay"));
+    $("#confirmOk").addEventListener("click", () => {
+      const id = $("#confirmOverlay").dataset.deleteId;
+      if (id) {
+        StudentManager.delete(id);
+        delete $("#confirmOverlay").dataset.deleteId;
+        closeModal("confirmOverlay");
+        renderAll();
+        showToast("Student removed.", "success");
+      }
+    });
+
+    // Export
+    $("#exportBtn").addEventListener("click", () => {
+      const csv = StudentManager.exportCSV();
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `quantio-students-${Utils.today()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Export downloaded.", "success");
+    });
+
+    // Import
+    $("#importInput").addEventListener("change", (ev) => {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = StudentManager.importCSV(e.target.result);
+        renderAll();
+        showToast(`Import: ${result.added} added, ${result.skipped} skipped.`, result.errors.length ? "error" : "success");
+      };
+      reader.readAsText(file);
+      ev.target.value = "";
+    });
+
+    // &mdash;
+    // Bulk attendance
+    document.addEventListener("click", (ev) => {
+      if (ev.target.id === "markAllPresent") {
+        StudentManager.getAll().forEach((s) => StudentManager.markAttendance(s.id, "present"));
+        renderAttendanceView();
+        showToast("All marked present.", "success");
+      }
+      if (ev.target.id === "markAllAbsent") {
+        StudentManager.getAll().forEach((s) => StudentManager.markAttendance(s.id, "absent"));
+        renderAttendanceView();
+        showToast("All marked absent.", "info");
+      }
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", (ev) => {
+      if (ev.target.tagName === "INPUT" || ev.target.tagName === "SELECT" || ev.target.tagName === "TEXTAREA") return;
+
+      switch (ev.key) {
+        case "1":
+          if (!ev.ctrlKey && !ev.metaKey) { switchView("dashboard"); ev.preventDefault(); }
+          break;
+        case "2":
+          if (!ev.ctrlKey && !ev.metaKey) { switchView("students"); ev.preventDefault(); }
+          break;
+        case "3":
+          if (!ev.ctrlKey && !ev.metaKey) { switchView("attendance"); ev.preventDefault(); }
+          break;
+        case "n":
+        case "N":
+          switchView("add");
+          ev.preventDefault();
+          break;
+        case "/":
+          $("#searchInput").focus();
+          ev.preventDefault();
+          break;
+        case "t":
+        case "T":
+          state.toggleTheme();
+          $("#themeToggle i").className = `fa-solid ${state.theme === "dark" ? "fa-moon" : "fa-sun"}`;
+          ev.preventDefault();
+          break;
+        case "Escape":
+          if ($("#detailOverlay").classList.contains("open")) closeModal("detailOverlay");
+          if ($("#confirmOverlay").classList.contains("open")) closeModal("confirmOverlay");
+          if ($("#shortcutsPanel").classList.contains("open")) $("#shortcutsPanel").classList.remove("open");
+          ev.preventDefault();
+          break;
+        case "?":
+          $("#shortcutsPanel").classList.toggle("open");
+          ev.preventDefault();
+          break;
+      }
+    });
+
+    // Form submit delegation (must rebind on each form render)
+    bindFormEvents();
+  }
+
+  function bindFormEvents() {
+    const form = $("#studentForm");
+    if (!form) return;
+
+    // Remove old listener by cloning
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+
+    newForm.addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      handleFormSubmit(newForm);
+    });
+
+    const cancelBtn = newForm.querySelector("#cancelEdit");
+    if (cancelBtn) {
+      cancelBtn.addEventListener("click", () => {
+        state.editingId = null;
+        state.view = "students";
+        renderCurrentView();
+        updateNavAndTitle();
+      });
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════
+     Form Logic
+  ═══════════════════════════════════════════════════ */
+
+  function handleFormSubmit(form) {
+    clearErrors();
+
     const data = {
-      name: this.e.fName.value,
-      studentId: this.e.fId.value,
-      email: this.e.fEmail.value,
-      grade: this.e.fGrade.value,
-      gpa: this.e.fGpa.value,
-      enrollDate: this.e.fDate.value,
+      name: form.querySelector("#fName").value,
+      studentId: form.querySelector("#fId").value,
+      email: form.querySelector("#fEmail").value,
+      grade: form.querySelector("#fGrade").value,
+      gpa: form.querySelector("#fGpa").value,
+      enrollDate: form.querySelector("#fDate").value,
     };
 
-    const editId = this.e.editingId.value;
-    const result = editId
-      ? this.manager.update(editId, data)
-      : this.manager.add(data);
+    const editId = form.querySelector("#editingId").value;
+    const result = editId ? StudentManager.update(editId, data) : StudentManager.add(data);
 
     if (!result.ok) {
-      this._showFormError(result.field, result.error);
+      showFieldError(result.field, result.error);
       return;
     }
 
-    const action = editId ? "updated" : "added";
-    this.showToast(`${result.student.name} ${action} successfully!`, "success");
-    this._resetForm();
-    this._renderAll();
-    if (editId) this.switchView("students");
+    showToast(`${result.student.name} ${editId ? "updated" : "added"} successfully!`, "success");
+    state.editingId = null;
+    switchView("students");
   }
 
-  _showFormError(field, msg) {
-    const map = {
-      name: "errName",
-      studentId: "errId",
-      email: "errEmail",
-      grade: "errGrade",
-      gpa: "errGpa",
-      enrollDate: "errDate",
-    };
-    const inputMap = {
-      name: "fName",
-      studentId: "fId",
-      email: "fEmail",
-      grade: "fGrade",
-      gpa: "fGpa",
-      enrollDate: "fDate",
-    };
-    if (map[field]) document.getElementById(map[field]).textContent = msg;
-    if (inputMap[field])
-      document.getElementById(inputMap[field]).classList.add("invalid");
+  function showFieldError(field, msg) {
+    const map = { name: "errName", studentId: "errId", email: "errEmail", grade: "errGrade", gpa: "errGpa", enrollDate: "errDate" };
+    const inputMap = { name: "fName", studentId: "fId", email: "fEmail", grade: "fGrade", gpa: "fGpa", enrollDate: "fDate" };
+    if (map[field]) $(`#${map[field]}`).textContent = msg;
+    if (inputMap[field]) $(`#${inputMap[field]}`).classList.add("invalid");
   }
 
-  _clearFormErrors() {
-    ["errName", "errId", "errEmail", "errGrade", "errGpa", "errDate"].forEach(
-      (id) => {
-        document.getElementById(id).textContent = "";
-      },
-    );
+  function clearErrors() {
+    ["errName", "errId", "errEmail", "errGrade", "errGpa", "errDate"].forEach((id) => {
+      const el = $(`#${id}`);
+      if (el) el.textContent = "";
+    });
     ["fName", "fId", "fEmail", "fGrade", "fGpa", "fDate"].forEach((id) => {
-      document.getElementById(id).classList.remove("invalid");
+      const el = $(`#${id}`);
+      if (el) el.classList.remove("invalid");
     });
   }
 
-  _resetForm() {
-    this.e.studentForm.reset();
-    this._clearFormErrors();
-    this.e.editingId.value = "";
-    this.e.formTitle.textContent = "Add New Student";
-    this.e.submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Student';
-    this.e.cancelEdit.style.display = "none";
-    this.e.pageTitle.textContent = "Add Student";
-  }
+  /* ═══════════════════════════════════════════════════
+     Modal Helpers
+  ═══════════════════════════════════════════════════ */
 
-  openEdit(id) {
-    const s = this.manager.getById(id);
+  function openDetail(id) {
+    const s = StudentManager.getById(id);
     if (!s) return;
 
-    this.switchView("add");
-    this.e.editingId.value = id;
-    this.e.formTitle.textContent = "Edit Student";
-    this.e.pageTitle.textContent = "Edit Student";
-    this.e.submitBtn.innerHTML =
-      '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
-    this.e.cancelEdit.style.display = "inline-flex";
+    $("#detailAvatar").textContent = s.initials;
+    $("#detailName").textContent = s.name;
+    $("#detailId").textContent = s.studentId;
 
-    this.e.fName.value = s.name;
-    this.e.fId.value = s.studentId;
-    this.e.fEmail.value = s.email;
-    this.e.fGrade.value = s.grade;
-    this.e.fGpa.value = s.gpa;
-    this.e.fDate.value = s.enrollDate;
-  }
-
-  /* ════════════════════════════════════
-     Detail Modal
-  ════════════════════════════════════ */
-  openDetailModal(id) {
-    const s = this.manager.getById(id);
-    if (!s) return;
-
-    this.e.detailAvatar.textContent = s.initials;
-    this.e.detailName.textContent = s.name;
-    this.e.detailId.textContent = s.studentId;
-
-    const pct = s.attendancePercentage;
+    const pct = s.attendancePct;
     const date = s.enrollDate
-      ? new Date(s.enrollDate).toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })
+      ? new Date(s.enrollDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
       : "—";
 
-    this.e.detailGrid.innerHTML = `
-      <div class="detail-item"><span class="detail-item-label">Email</span><span class="detail-item-value">${this._escHtml(s.email)}</span></div>
+    $("#detailGrid").innerHTML = `
+      <div class="detail-item"><span class="detail-item-label">Email</span><span class="detail-item-value">${Utils.esc(s.email)}</span></div>
       <div class="detail-item"><span class="detail-item-label">Grade Level</span><span class="detail-item-value">Grade ${s.grade}</span></div>
-      <div class="detail-item"><span class="detail-item-label">GPA</span><span class="detail-item-value ${s.gpaTier === "high" ? "gpa-high" : s.gpaTier === "low" ? "gpa-low" : "gpa-mid"}">${s.gpa.toFixed(2)}</span></div>
+      <div class="detail-item"><span class="detail-item-label">GPA</span><span class="detail-item-value" style="color:${s.gpaTier === "high" ? "var(--success)" : s.gpaTier === "low" ? "var(--danger)" : "var(--warning)"}">${s.gpa.toFixed(2)}</span></div>
       <div class="detail-item"><span class="detail-item-label">Enrolled</span><span class="detail-item-value">${date}</span></div>
       <div class="detail-item"><span class="detail-item-label">Attendance</span><span class="detail-item-value">${pct !== null ? pct + "%" : "No records"}</span></div>
       <div class="detail-item"><span class="detail-item-label">Days Recorded</span><span class="detail-item-value">${Object.keys(s.attendance).length}</span></div>
     `;
 
-    this.e.detailOverlay.classList.add("open");
+    $("#detailOverlay").classList.add("open");
   }
 
-  /* ════════════════════════════════════
-     Delete Confirm Modal
-  ════════════════════════════════════ */
-  confirmDelete(id) {
-    const s = this.manager.getById(id);
+  function openConfirm(id) {
+    const s = StudentManager.getById(id);
     if (!s) return;
-    this.pendingDeleteId = id;
-    this.e.confirmMsg.textContent = `Are you sure you want to permanently remove ${s.name} (${s.studentId})? This cannot be undone.`;
-    this.e.confirmOverlay.classList.add("open");
+    $("#confirmOverlay").dataset.deleteId = id;
+    $("#confirmMsg").textContent = `Remove ${s.name} (${s.studentId})? This cannot be undone.`;
+    $("#confirmOverlay").classList.add("open");
   }
 
-  _closeModal(overlay) {
-    overlay.classList.remove("open");
+  function closeModal(id) {
+    $(`#${id}`).classList.remove("open");
   }
 
-  /* ════════════════════════════════════
-     Attendance marking
-  ════════════════════════════════════ */
-  markAtt(id, status) {
-    this.manager.markAttendance(id, status);
-    this._renderAttendance();
-    this._renderDashboard();
-    this.showToast(`Attendance recorded.`, "info");
-  }
+  /* ═══════════════════════════════════════════════════
+     Toast
+  ═══════════════════════════════════════════════════ */
 
-  /* ════════════════════════════════════
-     CSV Export / Import
-  ════════════════════════════════════ */
-  _exportCSV() {
-    const csv = this.manager.exportCSV();
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `edutrack-students-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    this.showToast("Export downloaded.", "success");
-  }
-
-  _importCSV(ev) {
-    const file = ev.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = this.manager.importCSV(e.target.result);
-      this._renderAll();
-      const msg = `Import complete: ${result.added} added, ${result.skipped} skipped.`;
-      this.showToast(msg, result.errors.length ? "error" : "success");
-      if (result.errors.length) console.warn("Import errors:", result.errors);
-    };
-    reader.readAsText(file);
-    // Reset so same file can be re-imported
-    ev.target.value = "";
-  }
-
-  /* ════════════════════════════════════
-     Toast Notifications
-  ════════════════════════════════════ */
-  showToast(msg, type = "info") {
-    const icons = {
-      success: "fa-circle-check",
-      error: "fa-circle-xmark",
-      info: "fa-circle-info",
-    };
+  function showToast(msg, type = "info") {
+    const icons = { success: "fa-circle-check", error: "fa-circle-xmark", info: "fa-circle-info", warning: "fa-triangle-exclamation" };
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
-    toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${this._escHtml(msg)}</span>`;
-    this.e.toastContainer.appendChild(toast);
+    toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${Utils.esc(msg)}</span>`;
+    $("#toastContainer").appendChild(toast);
 
     setTimeout(() => {
       toast.classList.add("removing");
-      toast.addEventListener("animationend", () => toast.remove(), {
-        once: true,
-      });
-    }, 3200);
+      toast.addEventListener("animationend", () => toast.remove(), { once: true });
+    }, 3000);
   }
 
-  /* ════════════════════════════════════
-     Helpers
-  ════════════════════════════════════ */
-  _renderAll() {
-    if (this.currentView === "dashboard") this._renderDashboard();
-    if (this.currentView === "students") this._renderStudentsTable();
-    if (this.currentView === "attendance") this._renderAttendance();
-    // Also refresh dashboard stats silently when on other views
-    if (this.currentView !== "dashboard") {
-      const s = this.manager.stats();
-      this.e.statTotal.textContent = s.total;
-      this.e.statAvgGpa.textContent = s.avgGpa.toFixed(2);
-      this.e.statAttendance.textContent =
-        s.avgAtt !== null ? `${s.avgAtt}%` : "—";
-      this.e.statTopGpa.textContent =
-        s.topGpa !== null ? s.topGpa.toFixed(2) : "—";
+  /* ═══════════════════════════════════════════════════
+     View Routing
+  ═══════════════════════════════════════════════════ */
+
+  function switchView(name) {
+    state.view = name;
+    state.editingId = null;
+    renderCurrentView();
+    updateNavAndTitle();
+  }
+
+  function renderCurrentView() {
+    $$(".view").forEach((v) => v.classList.remove("active"));
+
+    const viewMap = {
+      dashboard: "view-dashboard",
+      students: "view-students",
+      attendance: "view-attendance",
+      add: "view-add",
+    };
+
+    const target = $(`#${viewMap[state.view]}`);
+    if (target) target.classList.add("active");
+
+    switch (state.view) {
+      case "dashboard":
+        renderDashboard();
+        break;
+      case "students":
+        renderStudentsView();
+        break;
+      case "attendance":
+        renderAttendanceView();
+        break;
+      case "add":
+        renderFormView();
+        bindFormEvents();
+        break;
     }
   }
 
-  /** Escape HTML to prevent XSS */
-  _escHtml(str) {
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
-  }
-}
+  function updateNavAndTitle() {
+    const titles = { dashboard: "Dashboard", students: "Students", attendance: "Attendance", add: "Add Student" };
 
-/* ════════════════════════════════════════════════
-   4. Bootstrap — seed data + launch
-════════════════════════════════════════════════ */
+    $$(".nav-item").forEach((item) => {
+      item.classList.toggle("active", item.dataset.view === state.view);
+    });
 
-/** Seed 5 sample students if storage is empty */
-function seedSampleData(manager) {
-  if (manager.getAll().length > 0) return; // already has data
-
-  const samples = [
-    {
-      name: "Emma Watson",
-      studentId: "STU-001",
-      email: "emma.watson@school.edu",
-      grade: 12,
-      gpa: 3.8,
-      enrollDate: "2021-09-01",
-    },
-    {
-      name: "James Wilson",
-      studentId: "STU-002",
-      email: "james.wilson@school.edu",
-      grade: 11,
-      gpa: 3.2,
-      enrollDate: "2022-09-01",
-    },
-    {
-      name: "Sophia Lee",
-      studentId: "STU-003",
-      email: "sophia.lee@school.edu",
-      grade: 10,
-      gpa: 3.9,
-      enrollDate: "2023-09-01",
-    },
-    {
-      name: "Michael Brown",
-      studentId: "STU-004",
-      email: "michael.brown@school.edu",
-      grade: 12,
-      gpa: 2.8,
-      enrollDate: "2021-09-01",
-    },
-    {
-      name: "Olivia Chen",
-      studentId: "STU-005",
-      email: "olivia.chen@school.edu",
-      grade: 9,
-      gpa: 3.5,
-      enrollDate: "2024-09-01",
-    },
-  ];
-
-  // Seed some historical attendance
-  const today = new Date();
-  samples.forEach((data, i) => {
-    const result = manager.add(data);
-    if (!result.ok || !result.student) return;
-    const id = result.student.id;
-    // Add 10 days of random attendance history
-    for (let d = 10; d >= 1; d--) {
-      const dt = new Date(today);
-      dt.setDate(dt.getDate() - d);
-      const key = dt.toISOString().slice(0, 10);
-      const status = Math.random() > 0.15 ? "present" : "absent";
-      manager.markAttendance(id, status);
-      // Manually set the date key since markAttendance uses today
-      const s = manager.getById(id);
-      if (s) {
-        const todayKey = new Date().toISOString().slice(0, 10);
-        s.attendance[key] = status;
-        delete s.attendance[todayKey]; // remove the "today" key just set
-      }
+    if (state.view === "add" && state.editingId) {
+      $("#pageTitle").textContent = "Edit Student";
+    } else {
+      $("#pageTitle").textContent = titles[state.view] || "";
     }
-    manager._save();
-  });
-}
+  }
 
-/* ── Init ── */
-const manager = new StudentManager();
-seedSampleData(manager);
+  function renderAll() {
+    renderCurrentView();
+    if (state.view === "dashboard") renderDashboard();
+  }
 
-// Expose to global so inline onclick handlers can reach it
-const app = new UI(manager);
+  /* ═══════════════════════════════════════════════════
+     Init
+  ═══════════════════════════════════════════════════ */
+
+  function init() {
+    StudentManager.init();
+    seedData();
+
+    // Initial state sync from theme
+    state.setTheme(state.theme);
+
+    renderLayout();
+    bindEvents();
+    renderDashboard();
+    updateNavAndTitle();
+
+    // Restore theme icon
+    $("#themeToggle i").className = `fa-solid ${state.theme === "dark" ? "fa-moon" : "fa-sun"}`;
+
+    // Remove activity from seeding
+    state.activity.length = 0;
+
+    // Expose for debugging
+    window.Quantio = { state, StudentManager, switchView, showToast };
+  }
+
+  // Boot
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+
+  return { switchView, showToast };
+})();
