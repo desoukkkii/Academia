@@ -100,7 +100,12 @@ const Quantio = (() => {
     },
 
     addActivity(type, text) {
-      this.activity.unshift({ type, text, time: Utils.timeAgo(new Date().toISOString()), timestamp: Date.now() });
+      this.activity.unshift({
+        type,
+        text,
+        time: Utils.timeAgo(new Date().toISOString()),
+        timestamp: Date.now(),
+      });
       if (this.activity.length > 50) this.activity.length = 50;
       this.notify();
     },
@@ -190,11 +195,25 @@ const Quantio = (() => {
       const err = this._validate(data);
       if (err) return err;
 
-      if (this._students.some((s) => s.studentId === data.studentId.trim().toUpperCase()))
-        return { ok: false, field: "studentId", error: "Student ID already exists." };
+      if (
+        this._students.some(
+          (s) => s.studentId === data.studentId.trim().toUpperCase(),
+        )
+      )
+        return {
+          ok: false,
+          field: "studentId",
+          error: "Student ID already exists.",
+        };
 
-      if (this._students.some((s) => s.email === data.email.trim().toLowerCase()))
-        return { ok: false, field: "email", error: "Email already registered." };
+      if (
+        this._students.some((s) => s.email === data.email.trim().toLowerCase())
+      )
+        return {
+          ok: false,
+          field: "email",
+          error: "Email already registered.",
+        };
 
       const student = new Student(data);
       this._students.unshift(student);
@@ -210,14 +229,37 @@ const Quantio = (() => {
       const err = this._validate(data);
       if (err) return err;
 
-      if (this._students.some((s) => s.id !== id && s.studentId === data.studentId.trim().toUpperCase()))
-        return { ok: false, field: "studentId", error: "Student ID already exists." };
+      if (
+        this._students.some(
+          (s) =>
+            s.id !== id && s.studentId === data.studentId.trim().toUpperCase(),
+        )
+      )
+        return {
+          ok: false,
+          field: "studentId",
+          error: "Student ID already exists.",
+        };
 
-      if (this._students.some((s) => s.id !== id && s.email === data.email.trim().toLowerCase()))
-        return { ok: false, field: "email", error: "Email already registered." };
+      if (
+        this._students.some(
+          (s) => s.id !== id && s.email === data.email.trim().toLowerCase(),
+        )
+      )
+        return {
+          ok: false,
+          field: "email",
+          error: "Email already registered.",
+        };
 
       const existing = this._students[idx];
-      const updated = new Student({ ...existing, ...data, id, attendance: existing.attendance, createdAt: existing.createdAt });
+      const updated = new Student({
+        ...existing,
+        ...data,
+        id,
+        attendance: existing.attendance,
+        createdAt: existing.createdAt,
+      });
       this._students[idx] = updated;
       Storage.save(this._students);
       state.addActivity("info", `Updated ${updated.name}`);
@@ -236,26 +278,43 @@ const Quantio = (() => {
       if (!student) return;
       student.attendance[Utils.today()] = status;
       Storage.save(this._students);
-      state.addActivity("warning", `${status === "present" ? "✅" : "❌"} ${student.name}: ${status}`);
+      state.addActivity(
+        "warning",
+        `${status === "present" ? "✅" : "❌"} ${student.name}: ${status}`,
+      );
     },
 
     filter(opts = {}) {
       const { search = "", grade = "all", sort = "", dir = "asc" } = opts;
       let list = this.getAll();
 
-      if (grade !== "all") list = list.filter((s) => String(s.grade) === String(grade));
+      if (grade !== "all")
+        list = list.filter((s) => String(s.grade) === String(grade));
 
       if (search.trim()) {
         const q = search.trim().toLowerCase();
-        list = list.filter((s) => s.name.toLowerCase().includes(q) || s.studentId.toLowerCase().includes(q));
+        list = list.filter(
+          (s) =>
+            s.name.toLowerCase().includes(q) ||
+            s.studentId.toLowerCase().includes(q),
+        );
       }
 
       if (sort) {
         list.sort((a, b) => {
           let va, vb;
-          if (sort === "name") { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); }
-          if (sort === "grade") { va = a.grade; vb = b.grade; }
-          if (sort === "gpa") { va = a.gpa; vb = b.gpa; }
+          if (sort === "name") {
+            va = a.name.toLowerCase();
+            vb = b.name.toLowerCase();
+          }
+          if (sort === "grade") {
+            va = a.grade;
+            vb = b.grade;
+          }
+          if (sort === "gpa") {
+            va = a.gpa;
+            vb = b.gpa;
+          }
           if (va < vb) return dir === "asc" ? -1 : 1;
           if (va > vb) return dir === "asc" ? 1 : -1;
           return 0;
@@ -270,17 +329,34 @@ const Quantio = (() => {
       const total = all.length;
       const avgGpa = total ? all.reduce((s, st) => s + st.gpa, 0) / total : 0;
       const byGrade = { 9: 0, 10: 0, 11: 0, 12: 0 };
-      all.forEach((s) => { byGrade[s.grade] = (byGrade[s.grade] || 0) + 1; });
+      all.forEach((s) => {
+        byGrade[s.grade] = (byGrade[s.grade] || 0) + 1;
+      });
       const topGpa = total ? Math.max(...all.map((s) => s.gpa)) : null;
       const attPcts = all.map((s) => s.attendancePct).filter((p) => p !== null);
-      const avgAtt = attPcts.length ? Math.round(attPcts.reduce((a, b) => a + b, 0) / attPcts.length) : null;
+      const avgAtt = attPcts.length
+        ? Math.round(attPcts.reduce((a, b) => a + b, 0) / attPcts.length)
+        : null;
       return { total, avgGpa, byGrade, topGpa, avgAtt };
     },
 
     exportCSV() {
-      const headers = ["Name", "Student ID", "Email", "Grade", "GPA", "Enrolled", "Attendance %"];
+      const headers = [
+        "Name",
+        "Student ID",
+        "Email",
+        "Grade",
+        "GPA",
+        "Enrolled",
+        "Attendance %",
+      ];
       const rows = this.getAll().map((s) => [
-        `"${s.name}"`, s.studentId, s.email, s.grade, s.gpa, s.enrollDate,
+        `"${s.name}"`,
+        s.studentId,
+        s.email,
+        s.grade,
+        s.gpa,
+        s.enrollDate,
         s.attendancePct !== null ? `${s.attendancePct}%` : "N/A",
       ]);
       return [headers, ...rows].map((r) => r.join(",")).join("\n");
@@ -289,39 +365,71 @@ const Quantio = (() => {
     importCSV(csv) {
       const lines = csv.trim().split("\n").filter(Boolean);
       const results = { added: 0, skipped: 0, errors: [] };
-      if (lines.length < 2) { results.errors.push("CSV has no data rows."); return results; }
+      if (lines.length < 2) {
+        results.errors.push("CSV has no data rows.");
+        return results;
+      }
 
       const firstLine = lines[0].toLowerCase();
-      const startIdx = firstLine.includes("name") || firstLine.includes("student") ? 1 : 0;
+      const startIdx =
+        firstLine.includes("name") || firstLine.includes("student") ? 1 : 0;
 
       for (let i = startIdx; i < lines.length; i++) {
-        const cols = lines[i].split(",").map((c) => c.trim().replace(/^"|"$/g, ""));
-        if (cols.length < 5) { results.skipped++; continue; }
+        const cols = lines[i]
+          .split(",")
+          .map((c) => c.trim().replace(/^"|"$/g, ""));
+        if (cols.length < 5) {
+          results.skipped++;
+          continue;
+        }
         const res = this.add({
-          name: cols[0], studentId: cols[1], email: cols[2],
-          grade: cols[3], gpa: cols[4],
+          name: cols[0],
+          studentId: cols[1],
+          email: cols[2],
+          grade: cols[3],
+          gpa: cols[4],
           enrollDate: cols[5] || Utils.today(),
         });
         if (res.ok) results.added++;
-        else { results.skipped++; results.errors.push(`Row ${i + 1}: ${res.error}`); }
+        else {
+          results.skipped++;
+          results.errors.push(`Row ${i + 1}: ${res.error}`);
+        }
       }
 
-      if (results.added > 0) state.addActivity("info", `Imported ${results.added} students`);
+      if (results.added > 0)
+        state.addActivity("info", `Imported ${results.added} students`);
       return results;
     },
 
     _validate(data) {
-      if (!data.name?.trim()) return { ok: false, field: "name", error: "Full name is required." };
-      if (!data.studentId?.trim()) return { ok: false, field: "studentId", error: "Student ID is required." };
-      if (!data.email?.trim()) return { ok: false, field: "email", error: "Email is required." };
+      if (!data.name?.trim())
+        return { ok: false, field: "name", error: "Full name is required." };
+      if (!data.studentId?.trim())
+        return {
+          ok: false,
+          field: "studentId",
+          error: "Student ID is required.",
+        };
+      if (!data.email?.trim())
+        return { ok: false, field: "email", error: "Email is required." };
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim()))
         return { ok: false, field: "email", error: "Invalid email format." };
       if (!data.grade || ![9, 10, 11, 12].includes(Number(data.grade)))
         return { ok: false, field: "grade", error: "Select a valid grade." };
       const gpa = parseFloat(data.gpa);
       if (isNaN(gpa) || gpa < 0 || gpa > 4)
-        return { ok: false, field: "gpa", error: "GPA must be between 0.0 and 4.0." };
-      if (!data.enrollDate) return { ok: false, field: "enrollDate", error: "Enrollment date is required." };
+        return {
+          ok: false,
+          field: "gpa",
+          error: "GPA must be between 0.0 and 4.0.",
+        };
+      if (!data.enrollDate)
+        return {
+          ok: false,
+          field: "enrollDate",
+          error: "Enrollment date is required.",
+        };
       return null;
     },
   };
@@ -334,11 +442,46 @@ const Quantio = (() => {
     if (StudentManager.getAll().length > 0) return;
 
     const samples = [
-      { name: "Emma Watson", studentId: "STU-001", email: "emma.watson@school.edu", grade: 12, gpa: 3.8, enrollDate: "2021-09-01" },
-      { name: "James Wilson", studentId: "STU-002", email: "james.wilson@school.edu", grade: 11, gpa: 3.2, enrollDate: "2022-09-01" },
-      { name: "Sophia Lee", studentId: "STU-003", email: "sophia.lee@school.edu", grade: 10, gpa: 3.9, enrollDate: "2023-09-01" },
-      { name: "Michael Brown", studentId: "STU-004", email: "michael.brown@school.edu", grade: 12, gpa: 2.8, enrollDate: "2021-09-01" },
-      { name: "Olivia Chen", studentId: "STU-005", email: "olivia.chen@school.edu", grade: 9, gpa: 3.5, enrollDate: "2024-09-01" },
+      {
+        name: "Emma Watson",
+        studentId: "STU-001",
+        email: "emma.watson@school.edu",
+        grade: 12,
+        gpa: 3.8,
+        enrollDate: "2021-09-01",
+      },
+      {
+        name: "James Wilson",
+        studentId: "STU-002",
+        email: "james.wilson@school.edu",
+        grade: 11,
+        gpa: 3.2,
+        enrollDate: "2022-09-01",
+      },
+      {
+        name: "Sophia Lee",
+        studentId: "STU-003",
+        email: "sophia.lee@school.edu",
+        grade: 10,
+        gpa: 3.9,
+        enrollDate: "2023-09-01",
+      },
+      {
+        name: "Michael Brown",
+        studentId: "STU-004",
+        email: "michael.brown@school.edu",
+        grade: 12,
+        gpa: 2.8,
+        enrollDate: "2021-09-01",
+      },
+      {
+        name: "Olivia Chen",
+        studentId: "STU-005",
+        email: "olivia.chen@school.edu",
+        grade: 9,
+        gpa: 3.5,
+        enrollDate: "2024-09-01",
+      },
     ];
 
     const today = new Date();
@@ -512,7 +655,7 @@ const Quantio = (() => {
                   <div class="grade-bar-fill" style="width:${Math.max((s.byGrade[g] / Math.max(...Object.values(s.byGrade), 1)) * 100, 0)}%"></div>
                 </div>
                 <span class="grade-bar-count">${s.byGrade[g]}</span>
-              </div>`
+              </div>`,
               )
               .join("")}
           </div>
@@ -521,10 +664,11 @@ const Quantio = (() => {
         <div class="dash-card">
           <h3 class="dash-card-title"><i class="fa-solid fa-clock-rotate-left"></i> Recently Added</h3>
           <ul class="recent-ul">
-            ${recent.length
-              ? recent
-                  .map(
-                    (st) => `
+            ${
+              recent.length
+                ? recent
+                    .map(
+                      (st) => `
                 <li class="recent-li" data-id="${st.id}">
                   <div class="recent-li-avatar">${Utils.esc(st.initials)}</div>
                   <div>
@@ -532,10 +676,11 @@ const Quantio = (() => {
                     <div class="recent-li-sub">Grade ${st.grade}</div>
                   </div>
                   <span class="recent-li-gpa">${st.gpa.toFixed(2)}</span>
-                </li>`
-                  )
-                  .join("")
-              : '<li style="color:var(--text-dim);font-size:13px;padding:12px 0">No students yet. <a href="#" data-view="add" style="color:var(--primary-light)">Add one</a>.</li>'}
+                </li>`,
+                    )
+                    .join("")
+                : '<li style="color:var(--text-dim);font-size:13px;padding:12px 0">No students yet. <a href="#" data-view="add" style="color:var(--primary-light)">Add one</a>.</li>'
+            }
           </ul>
         </div>
       </div>
@@ -543,19 +688,21 @@ const Quantio = (() => {
       <div class="activity-timeline" id="activityTimeline">
         <h3 class="activity-title"><i class="fa-solid fa-bolt"></i> Recent Activity</h3>
         <div class="activity-list">
-          ${state.activity.length
-            ? state.activity
-                .slice(0, 10)
-                .map(
-                  (a) => `
+          ${
+            state.activity.length
+              ? state.activity
+                  .slice(0, 10)
+                  .map(
+                    (a) => `
                 <div class="activity-item">
                   <span class="activity-dot ${a.type}"></span>
                   <span class="activity-text">${Utils.esc(a.text)}</span>
                   <span class="activity-time">${a.time}</span>
-                </div>`
-                )
-                .join("")
-            : '<div style="color:var(--text-dim);font-size:13px;padding:8px 0">No activity yet.</div>'}
+                </div>`,
+                  )
+                  .join("")
+              : '<div style="color:var(--text-dim);font-size:13px;padding:8px 0">No activity yet.</div>'
+          }
         </div>
       </div>
     `;
@@ -665,7 +812,9 @@ const Quantio = (() => {
     const today = new Date();
     const todayK = Utils.today();
     const all = StudentManager.getAll();
-    const present = all.filter((s) => s.attendance[todayK] === "present").length;
+    const present = all.filter(
+      (s) => s.attendance[todayK] === "present",
+    ).length;
     const absent = all.filter((s) => s.attendance[todayK] === "absent").length;
 
     el.innerHTML = `
@@ -686,14 +835,23 @@ const Quantio = (() => {
         </div>
       </div>
       <div class="attendance-grid" id="attendanceGrid">
-        ${all.length
-          ? all
-              .map((s) => {
-                const todayStatus = s.attendance[todayK] || "";
-                const pct = s.attendancePct;
-                const pctStr = pct !== null ? `${pct}% overall` : "No records";
-                const pctCls = pct === null ? "" : pct >= 80 ? "high" : pct >= 60 ? "mid" : "low";
-                return `
+        ${
+          all.length
+            ? all
+                .map((s) => {
+                  const todayStatus = s.attendance[todayK] || "";
+                  const pct = s.attendancePct;
+                  const pctStr =
+                    pct !== null ? `${pct}% overall` : "No records";
+                  const pctCls =
+                    pct === null
+                      ? ""
+                      : pct >= 80
+                        ? "high"
+                        : pct >= 60
+                          ? "mid"
+                          : "low";
+                  return `
                   <div class="att-card ${todayStatus}" data-id="${s.id}">
                     <div class="att-card-avatar">${Utils.esc(s.initials)}</div>
                     <div class="att-card-info">
@@ -705,9 +863,10 @@ const Quantio = (() => {
                       <button class="att-btn ${todayStatus === "absent" ? "active-a" : ""}" data-action="absent" data-id="${s.id}">A</button>
                     </div>
                   </div>`;
-              })
-              .join("")
-          : '<p style="color:var(--text-dim);font-size:14px;grid-column:1/-1;text-align:center;padding:48px 0">No students yet.</p>'}
+                })
+                .join("")
+            : '<p style="color:var(--text-dim);font-size:14px;grid-column:1/-1;text-align:center;padding:48px 0">No students yet.</p>'
+        }
       </div>
     `;
   }
@@ -748,7 +907,7 @@ const Quantio = (() => {
                 ${[9, 10, 11, 12]
                   .map(
                     (g) =>
-                      `<option value="${g}" ${isEdit && s.grade === g ? "selected" : ""}>Grade ${g}</option>`
+                      `<option value="${g}" ${isEdit && s.grade === g ? "selected" : ""}>Grade ${g}</option>`,
                   )
                   .join("")}
               </select>
@@ -798,7 +957,11 @@ const Quantio = (() => {
 
     // Close sidebar on outside click (mobile)
     document.addEventListener("click", (ev) => {
-      if (window.innerWidth <= 860 && !$("#sidebar").contains(ev.target) && !$("#hamburger").contains(ev.target)) {
+      if (
+        window.innerWidth <= 860 &&
+        !$("#sidebar").contains(ev.target) &&
+        !$("#hamburger").contains(ev.target)
+      ) {
         $("#sidebar").classList.remove("open");
       }
     });
@@ -904,7 +1067,8 @@ const Quantio = (() => {
     // Theme toggle
     $("#themeToggle").addEventListener("click", () => {
       state.toggleTheme();
-      $("#themeToggle i").className = `fa-solid ${state.theme === "dark" ? "fa-moon" : "fa-sun"}`;
+      $("#themeToggle i").className =
+        `fa-solid ${state.theme === "dark" ? "fa-moon" : "fa-sun"}`;
     });
 
     // Shortcuts panel
@@ -914,18 +1078,26 @@ const Quantio = (() => {
 
     document.addEventListener("click", (ev) => {
       const panel = $("#shortcutsPanel");
-      if (panel.classList.contains("open") && !ev.target.closest("#shortcutsPanel") && !ev.target.closest("#shortcutsToggle")) {
+      if (
+        panel.classList.contains("open") &&
+        !ev.target.closest("#shortcutsPanel") &&
+        !ev.target.closest("#shortcutsToggle")
+      ) {
         panel.classList.remove("open");
       }
     });
 
     // Modal close
-    $("#detailClose").addEventListener("click", () => closeModal("detailOverlay"));
+    $("#detailClose").addEventListener("click", () =>
+      closeModal("detailOverlay"),
+    );
     $("#detailOverlay").addEventListener("click", (ev) => {
       if (ev.target === $("#detailOverlay")) closeModal("detailOverlay");
     });
 
-    $("#confirmCancel").addEventListener("click", () => closeModal("confirmOverlay"));
+    $("#confirmCancel").addEventListener("click", () =>
+      closeModal("confirmOverlay"),
+    );
     $("#confirmOk").addEventListener("click", () => {
       const id = $("#confirmOverlay").dataset.deleteId;
       if (id) {
@@ -958,7 +1130,10 @@ const Quantio = (() => {
       reader.onload = (e) => {
         const result = StudentManager.importCSV(e.target.result);
         renderAll();
-        showToast(`Import: ${result.added} added, ${result.skipped} skipped.`, result.errors.length ? "error" : "success");
+        showToast(
+          `Import: ${result.added} added, ${result.skipped} skipped.`,
+          result.errors.length ? "error" : "success",
+        );
       };
       reader.readAsText(file);
       ev.target.value = "";
@@ -968,12 +1143,16 @@ const Quantio = (() => {
     // Bulk attendance
     document.addEventListener("click", (ev) => {
       if (ev.target.id === "markAllPresent") {
-        StudentManager.getAll().forEach((s) => StudentManager.markAttendance(s.id, "present"));
+        StudentManager.getAll().forEach((s) =>
+          StudentManager.markAttendance(s.id, "present"),
+        );
         renderAttendanceView();
         showToast("All marked present.", "success");
       }
       if (ev.target.id === "markAllAbsent") {
-        StudentManager.getAll().forEach((s) => StudentManager.markAttendance(s.id, "absent"));
+        StudentManager.getAll().forEach((s) =>
+          StudentManager.markAttendance(s.id, "absent"),
+        );
         renderAttendanceView();
         showToast("All marked absent.", "info");
       }
@@ -981,17 +1160,31 @@ const Quantio = (() => {
 
     // Keyboard shortcuts
     document.addEventListener("keydown", (ev) => {
-      if (ev.target.tagName === "INPUT" || ev.target.tagName === "SELECT" || ev.target.tagName === "TEXTAREA") return;
+      if (
+        ev.target.tagName === "INPUT" ||
+        ev.target.tagName === "SELECT" ||
+        ev.target.tagName === "TEXTAREA"
+      )
+        return;
 
       switch (ev.key) {
         case "1":
-          if (!ev.ctrlKey && !ev.metaKey) { switchView("dashboard"); ev.preventDefault(); }
+          if (!ev.ctrlKey && !ev.metaKey) {
+            switchView("dashboard");
+            ev.preventDefault();
+          }
           break;
         case "2":
-          if (!ev.ctrlKey && !ev.metaKey) { switchView("students"); ev.preventDefault(); }
+          if (!ev.ctrlKey && !ev.metaKey) {
+            switchView("students");
+            ev.preventDefault();
+          }
           break;
         case "3":
-          if (!ev.ctrlKey && !ev.metaKey) { switchView("attendance"); ev.preventDefault(); }
+          if (!ev.ctrlKey && !ev.metaKey) {
+            switchView("attendance");
+            ev.preventDefault();
+          }
           break;
         case "n":
         case "N":
@@ -1005,13 +1198,17 @@ const Quantio = (() => {
         case "t":
         case "T":
           state.toggleTheme();
-          $("#themeToggle i").className = `fa-solid ${state.theme === "dark" ? "fa-moon" : "fa-sun"}`;
+          $("#themeToggle i").className =
+            `fa-solid ${state.theme === "dark" ? "fa-moon" : "fa-sun"}`;
           ev.preventDefault();
           break;
         case "Escape":
-          if ($("#detailOverlay").classList.contains("open")) closeModal("detailOverlay");
-          if ($("#confirmOverlay").classList.contains("open")) closeModal("confirmOverlay");
-          if ($("#shortcutsPanel").classList.contains("open")) $("#shortcutsPanel").classList.remove("open");
+          if ($("#detailOverlay").classList.contains("open"))
+            closeModal("detailOverlay");
+          if ($("#confirmOverlay").classList.contains("open"))
+            closeModal("confirmOverlay");
+          if ($("#shortcutsPanel").classList.contains("open"))
+            $("#shortcutsPanel").classList.remove("open");
           ev.preventDefault();
           break;
         case "?":
@@ -1066,30 +1263,51 @@ const Quantio = (() => {
     };
 
     const editId = form.querySelector("#editingId").value;
-    const result = editId ? StudentManager.update(editId, data) : StudentManager.add(data);
+    const result = editId
+      ? StudentManager.update(editId, data)
+      : StudentManager.add(data);
 
     if (!result.ok) {
       showFieldError(result.field, result.error);
       return;
     }
 
-    showToast(`${result.student.name} ${editId ? "updated" : "added"} successfully!`, "success");
+    showToast(
+      `${result.student.name} ${editId ? "updated" : "added"} successfully!`,
+      "success",
+    );
     state.editingId = null;
     switchView("students");
   }
 
   function showFieldError(field, msg) {
-    const map = { name: "errName", studentId: "errId", email: "errEmail", grade: "errGrade", gpa: "errGpa", enrollDate: "errDate" };
-    const inputMap = { name: "fName", studentId: "fId", email: "fEmail", grade: "fGrade", gpa: "fGpa", enrollDate: "fDate" };
+    const map = {
+      name: "errName",
+      studentId: "errId",
+      email: "errEmail",
+      grade: "errGrade",
+      gpa: "errGpa",
+      enrollDate: "errDate",
+    };
+    const inputMap = {
+      name: "fName",
+      studentId: "fId",
+      email: "fEmail",
+      grade: "fGrade",
+      gpa: "fGpa",
+      enrollDate: "fDate",
+    };
     if (map[field]) $(`#${map[field]}`).textContent = msg;
     if (inputMap[field]) $(`#${inputMap[field]}`).classList.add("invalid");
   }
 
   function clearErrors() {
-    ["errName", "errId", "errEmail", "errGrade", "errGpa", "errDate"].forEach((id) => {
-      const el = $(`#${id}`);
-      if (el) el.textContent = "";
-    });
+    ["errName", "errId", "errEmail", "errGrade", "errGpa", "errDate"].forEach(
+      (id) => {
+        const el = $(`#${id}`);
+        if (el) el.textContent = "";
+      },
+    );
     ["fName", "fId", "fEmail", "fGrade", "fGpa", "fDate"].forEach((id) => {
       const el = $(`#${id}`);
       if (el) el.classList.remove("invalid");
@@ -1110,7 +1328,11 @@ const Quantio = (() => {
 
     const pct = s.attendancePct;
     const date = s.enrollDate
-      ? new Date(s.enrollDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+      ? new Date(s.enrollDate).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })
       : "—";
 
     $("#detailGrid").innerHTML = `
@@ -1129,7 +1351,8 @@ const Quantio = (() => {
     const s = StudentManager.getById(id);
     if (!s) return;
     $("#confirmOverlay").dataset.deleteId = id;
-    $("#confirmMsg").textContent = `Remove ${s.name} (${s.studentId})? This cannot be undone.`;
+    $("#confirmMsg").textContent =
+      `Remove ${s.name} (${s.studentId})? This cannot be undone.`;
     $("#confirmOverlay").classList.add("open");
   }
 
@@ -1142,7 +1365,12 @@ const Quantio = (() => {
   ═══════════════════════════════════════════════════ */
 
   function showToast(msg, type = "info") {
-    const icons = { success: "fa-circle-check", error: "fa-circle-xmark", info: "fa-circle-info", warning: "fa-triangle-exclamation" };
+    const icons = {
+      success: "fa-circle-check",
+      error: "fa-circle-xmark",
+      info: "fa-circle-info",
+      warning: "fa-triangle-exclamation",
+    };
     const toast = document.createElement("div");
     toast.className = `toast ${type}`;
     toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${Utils.esc(msg)}</span>`;
@@ -1150,7 +1378,9 @@ const Quantio = (() => {
 
     setTimeout(() => {
       toast.classList.add("removing");
-      toast.addEventListener("animationend", () => toast.remove(), { once: true });
+      toast.addEventListener("animationend", () => toast.remove(), {
+        once: true,
+      });
     }, 3000);
   }
 
@@ -1196,7 +1426,12 @@ const Quantio = (() => {
   }
 
   function updateNavAndTitle() {
-    const titles = { dashboard: "Dashboard", students: "Students", attendance: "Attendance", add: "Add Student" };
+    const titles = {
+      dashboard: "Dashboard",
+      students: "Students",
+      attendance: "Attendance",
+      add: "Add Student",
+    };
 
     $$(".nav-item").forEach((item) => {
       item.classList.toggle("active", item.dataset.view === state.view);
@@ -1231,7 +1466,8 @@ const Quantio = (() => {
     updateNavAndTitle();
 
     // Restore theme icon
-    $("#themeToggle i").className = `fa-solid ${state.theme === "dark" ? "fa-moon" : "fa-sun"}`;
+    $("#themeToggle i").className =
+      `fa-solid ${state.theme === "dark" ? "fa-moon" : "fa-sun"}`;
 
     // Remove activity from seeding
     state.activity.length = 0;
