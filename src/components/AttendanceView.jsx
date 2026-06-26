@@ -36,7 +36,7 @@ export default function AttendanceView() {
         <span className="text-[var(--color-text-dim)] text-[13px]">{students.length - present - absent} unmarked</span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-sm:gap-2">
         {students.length ? students.map((s) => {
           const todayStatus = s.attendance[todayKey] || "";
           const pct = getAttendancePct(s);

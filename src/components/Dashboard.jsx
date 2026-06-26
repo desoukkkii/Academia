@@ -10,7 +10,7 @@ export default function Dashboard({ onStudentClick }) {
 
   return (
     <div className="animate-[fadeSlideIn_0.4s_cubic-bezier(0.32,0.72,0,1)]">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-5">
+      <div className="grid grid-cols-2 max-sm:grid-cols-1 lg:grid-cols-4 gap-3.5 max-sm:gap-2.5 mb-5">
         <StatCard icon="fa-users" accent="primary" label="Total Students" value={String(stats.total)} />
         <StatCard icon="fa-star" accent="secondary" label="Average GPA" value={stats.avgGpa.toFixed(2)} />
         <StatCard icon="fa-trophy" accent="accent" label="Top GPA" value={stats.topGpa !== null ? stats.topGpa.toFixed(2) : "—"} />
@@ -18,9 +18,9 @@ export default function Dashboard({ onStudentClick }) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-3.5">
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-5"
+        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-5 max-sm:p-4"
           style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}>
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+          <h3 className="text-sm font-semibold mb-4 max-sm:mb-3 flex items-center gap-2">
             <i className="fa-solid fa-chart-column text-[var(--color-primary-light)] text-sm" />
             Students by Grade
           </h3>
@@ -42,9 +42,9 @@ export default function Dashboard({ onStudentClick }) {
           </div>
         </div>
 
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-5"
+        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-5 max-sm:p-4"
           style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}>
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+          <h3 className="text-sm font-semibold mb-4 max-sm:mb-3 flex items-center gap-2">
             <i className="fa-solid fa-clock-rotate-left text-[var(--color-primary-light)] text-sm" />
             Recently Added
           </h3>
@@ -72,7 +72,7 @@ export default function Dashboard({ onStudentClick }) {
         </div>
       </div>
 
-      <div className="mt-5 rounded-[var(--radius-card)] border border-[var(--color-border)] p-5"
+      <div className="mt-5 rounded-[var(--radius-card)] border border-[var(--color-border)] p-5 max-sm:p-4"
         style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}>
         <h3 className="text-sm font-semibold mb-3.5 flex items-center gap-2">
           <i className="fa-solid fa-bolt text-[var(--color-accent)] text-sm" />
@@ -132,7 +132,7 @@ function StatCard({ icon, accent, label, value }) {
   }[accent];
 
   return (
-    <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-[18px] flex items-center gap-3.5 relative overflow-hidden transition-all duration-[0.22s] hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)] hover:border-[var(--color-border-light)] cursor-default"
+    <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-[18px] max-sm:p-3.5 flex items-center gap-3.5 max-sm:gap-2.5 relative overflow-hidden transition-all duration-[0.22s] hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)] hover:border-[var(--color-border-light)] cursor-default"
       style={{
         background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)",
         backdropFilter: "blur(8px)",
@@ -144,13 +144,13 @@ function StatCard({ icon, accent, label, value }) {
           WebkitMaskComposite: "xor",
           maskComposite: "exclude",
         }} />
-      <div className="w-11 h-11 rounded-[var(--radius-sm)] flex items-center justify-center text-lg flex-shrink-0"
+      <div className="w-11 h-11 max-sm:w-9 max-sm:h-9 rounded-[var(--radius-sm)] flex items-center justify-center text-lg max-sm:text-base flex-shrink-0"
         style={{ background: iconBg.bg, color: iconBg.color }}>
         <i className={`fa-solid ${icon}`} />
       </div>
       <div>
-        <span className="block text-[11px] text-[var(--color-text-muted)] uppercase tracking-[0.5px] mb-0.5">{label}</span>
-        <span className="block text-[26px] font-extrabold leading-[1.1] tracking-tight tabular-nums">{displayValue}</span>
+        <span className="block text-[11px] max-sm:text-[10px] text-[var(--color-text-muted)] uppercase tracking-[0.5px] mb-0.5">{label}</span>
+        <span className="block text-[26px] max-sm:text-[20px] font-extrabold leading-[1.1] tracking-tight tabular-nums">{displayValue}</span>
       </div>
     </div>
   );

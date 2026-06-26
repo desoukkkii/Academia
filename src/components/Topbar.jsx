@@ -25,7 +25,7 @@ export default function Topbar({ onMenuToggle, onShortcutsToggle }) {
   };
 
   return (
-    <header className="h-16 flex items-center justify-between px-5 sticky top-0 z-100 border-b border-[var(--color-border)]"
+    <header className="h-16 max-sm:h-14 flex items-center justify-between px-5 max-sm:px-3 sticky top-0 z-100 border-b border-[var(--color-border)]"
       style={{ background: "color-mix(in oklab, var(--color-bg-elevated) 70%, transparent)", backdropFilter: "blur(20px) saturate(160%)" }}>
       <div className="flex items-center gap-3">
         <button onClick={onMenuToggle} className="md:hidden text-[var(--color-text-muted)] text-[17px] p-1.5 rounded-[var(--radius-xs)] hover:bg-[var(--color-surface-1)] hover:text-[var(--color-text)] transition-all">
@@ -44,7 +44,7 @@ export default function Topbar({ onMenuToggle, onShortcutsToggle }) {
             value={searchVal}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder="Search name or ID…"
-            className="bg-transparent border-none outline-none text-[13px] w-[170px] max-sm:w-[100px] text-[var(--color-text)] placeholder:text-[var(--color-text-dim)]"
+            className="bg-transparent border-none outline-none text-[13px] w-[170px] max-sm:w-[110px] max-[400px]:w-[80px] text-[var(--color-text)] placeholder:text-[var(--color-text-dim)]"
           />
           {searchVal && (
             <button onClick={() => handleSearch("")} className="text-[var(--color-text-dim)] text-xs p-0.5 rounded-full hover:text-[var(--color-text)] hover:bg-[var(--color-surface-1)]">

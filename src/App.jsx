@@ -74,7 +74,7 @@ function AppContent() {
           onShortcutsToggle={() => setShortcutsOpen((p) => !p)}
         />
 
-        <main className="flex-1 p-6 max-sm:p-4 max-sm:pb-9" id="main">
+        <main className="flex-1 p-6 max-sm:p-3 max-sm:pb-9" id="main">
           {view === "dashboard" && <Dashboard onStudentClick={(id) => setDetailId(id)} />}
           {view === "students" && (
             <StudentsView
@@ -92,7 +92,7 @@ function AppContent() {
       {confirmId && <ConfirmModal studentId={confirmId} onClose={() => setConfirmId(null)} />}
       <ShortcutsPanel open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
-      <div className="fixed bottom-5 right-5 flex flex-col gap-2 z-[9999] pointer-events-none">
+      <div className="fixed bottom-5 right-5 max-sm:right-3 max-sm:bottom-3 flex flex-col gap-2 z-[9999] pointer-events-none">
         {toasts.map((t) => (
           <div key={t.id}
             className={`pointer-events-auto flex items-center gap-2 px-4 py-2.5 text-[13px] rounded-[var(--radius-sm)] border border-[var(--color-border)] animate-[toastSlideIn_0.3s_ease] max-w-[300px] ${

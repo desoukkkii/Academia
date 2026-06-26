@@ -11,12 +11,16 @@ export default function Sidebar({ open, onClose }) {
   const { view, setView, handleExportCSV } = useApp();
 
   return (
-    <aside
-      className={`fixed top-0 left-0 bottom-0 z-200 w-[232px] md:w-[232px] flex flex-col transition-transform duration-[0.22s] ease-[cubic-bezier(0.32,0.72,0,1)] ${
-        open ? "translate-x-0" : "-translate-x-full"
-      } md:translate-x-0 bg-[var(--color-bg-elevated)] border-r border-[var(--color-border)] shadow-[4px_0_32px_rgba(0,0,0,0.5)] md:shadow-none`}
-      style={{ background: "linear-gradient(180deg, var(--color-bg-elevated), var(--color-bg))" }}
-    >
+    <>
+      {open && (
+        <div className="fixed inset-0 z-[199] bg-black/50 md:hidden" onClick={onClose} />
+      )}
+      <aside
+        className={`fixed top-0 left-0 bottom-0 z-200 w-[232px] md:w-[232px] flex flex-col transition-transform duration-[0.22s] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          open ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0 bg-[var(--color-bg-elevated)] border-r border-[var(--color-border)] shadow-[4px_0_32px_rgba(0,0,0,0.5)] md:shadow-none`}
+        style={{ background: "linear-gradient(180deg, var(--color-bg-elevated), var(--color-bg))" }}
+      >
       <div className="flex items-center gap-2.5 px-4 pb-3.5 pt-[18px] border-b border-[var(--color-border)]">
         <div className="w-[34px] h-[34px] rounded-[var(--radius-xs)] flex items-center justify-center text-base text-white flex-shrink-0"
           style={{ background: "linear-gradient(135deg, var(--color-primary), var(--color-secondary))" }}>
@@ -57,6 +61,7 @@ export default function Sidebar({ open, onClose }) {
         <ImportButton />
       </div>
     </aside>
+    </>
   );
 }
 

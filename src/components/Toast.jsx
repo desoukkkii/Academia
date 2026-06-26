@@ -23,7 +23,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext value={showToast}>
       {children}
-      <div className="fixed bottom-5 right-5 flex flex-col gap-2 z-[9999] pointer-events-none">
+      <div className="fixed bottom-5 right-5 max-sm:right-3 max-sm:bottom-3 flex flex-col gap-2 z-[9999] pointer-events-none">
         {toasts.map((t) => (
           <div key={t.id}
             className={`pointer-events-auto flex items-center gap-2 px-4 py-2.5 text-[13px] rounded-[var(--radius-sm)] border border-[var(--color-border)] animate-[toastSlideIn_0.3s_ease] max-w-[300px] ${

@@ -15,7 +15,7 @@ export default function StudentDetailModal({ studentId, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full max-w-[480px] rounded-2xl border border-[var(--color-border)] p-7 relative max-h-[90vh] overflow-y-auto"
+      <div className="w-full max-w-[480px] rounded-2xl border border-[var(--color-border)] p-7 max-sm:p-4 relative max-h-[90vh] overflow-y-auto"
         style={{ background: "var(--color-bg-card)" }}>
         <button onClick={onClose} className="absolute top-3.5 right-3.5 w-7 h-7 rounded-full bg-[var(--color-surface-1)] text-[var(--color-text-muted)] flex items-center justify-center text-[13px] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] transition-all">
           <i className="fa-solid fa-xmark" />
@@ -31,7 +31,7 @@ export default function StudentDetailModal({ studentId, onClose }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-2 max-sm:grid-cols-1 gap-3.5">
           <DetailItem label="Email" value={s.email} />
           <DetailItem label="Grade Level" value={`Grade ${s.grade}`} />
           <DetailItem label="GPA" value={s.gpa.toFixed(2)} valueColor={gpaColor} />

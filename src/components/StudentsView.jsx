@@ -28,7 +28,7 @@ export default function StudentsView({ onDetail, onEdit, onDelete }) {
             {grades.map((g) => (
               <button key={g}
                 onClick={() => setFilters({ grade: String(g) })}
-                className={`px-3.5 py-1.5 rounded-full text-xs border transition-all ${
+                className={`px-3.5 max-sm:px-2.5 py-1.5 rounded-full text-xs max-sm:text-[11px] border transition-all ${
                   String(grade) === String(g)
                     ? "text-white font-medium border-transparent"
                     : "border-[var(--color-border)] bg-[var(--color-bg-card)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
@@ -54,7 +54,7 @@ export default function StudentsView({ onDetail, onEdit, onDelete }) {
             <thead>
               <tr style={{ background: "var(--color-surface-1)", borderBottom: "1px solid var(--color-border)" }}>
                 <Th sortable col="name" currentSort={sort} dir={dir} onClick={() => handleSort("name")}>Name</Th>
-                <Th>Student ID</Th>
+                <Th className="hidden sm:table-cell">Student ID</Th>
                 <Th className="hidden sm:table-cell">Email</Th>
                 <Th sortable col="grade" currentSort={sort} dir={dir} onClick={() => handleSort("grade")}>Grade</Th>
                 <Th sortable col="gpa" currentSort={sort} dir={dir} onClick={() => handleSort("gpa")}>GPA</Th>
@@ -80,24 +80,24 @@ export default function StudentsView({ onDetail, onEdit, onDelete }) {
                   <tr key={s.id}
                     onClick={() => onDetail(s.id)}
                     className="border-b border-[var(--color-border)] last:border-b-0 transition-all hover:bg-[var(--color-surface-2)] cursor-pointer">
-                    <td className="p-3 align-middle">
-                      <div className="flex items-center gap-2.5 font-medium">
-                        <div className="w-7 h-7 rounded-full bg-[var(--color-primary-glow)] text-[var(--color-primary-light)] text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                    <td className="p-3 max-sm:px-2 max-sm:py-2.5 align-middle">
+                      <div className="flex items-center gap-2.5 max-sm:gap-1.5 font-medium">
+                        <div className="w-7 h-7 max-sm:w-6 max-sm:h-6 rounded-full bg-[var(--color-primary-glow)] text-[var(--color-primary-light)] text-[10px] font-bold flex items-center justify-center flex-shrink-0">
                           {getInitials(s.name)}
                         </div>
-                        {esc(s.name)}
+                        <span className="max-sm:text-[12px]">{esc(s.name)}</span>
                       </div>
                     </td>
-                    <td className="p-3 align-middle"><span className="font-mono text-xs text-[var(--color-text-muted)]">{esc(s.studentId)}</span></td>
-                    <td className="p-3 align-middle hidden sm:table-cell"><span className="text-xs text-[var(--color-text-muted)]">{esc(s.email)}</span></td>
-                    <td className="p-3 align-middle">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold border ${gradeColors[gradeClass]}`}>
+                    <td className="p-3 max-sm:px-2 max-sm:py-2.5 align-middle hidden sm:table-cell"><span className="font-mono text-xs text-[var(--color-text-muted)]">{esc(s.studentId)}</span></td>
+                    <td className="p-3 max-sm:px-2 max-sm:py-2.5 align-middle hidden sm:table-cell"><span className="text-xs text-[var(--color-text-muted)]">{esc(s.email)}</span></td>
+                    <td className="p-3 max-sm:px-2 max-sm:py-2.5 align-middle">
+                      <span className={`inline-block px-2 max-sm:px-1.5 py-0.5 rounded-full text-[11px] max-sm:text-[10px] font-semibold border ${gradeColors[gradeClass]}`}>
                         Grade {s.grade}
                       </span>
                     </td>
-                    <td className="p-3 align-middle"><span className={`font-bold text-[13px] tabular-nums ${gpaColor}`}>{s.gpa.toFixed(2)}</span></td>
-                    <td className="p-3 align-middle hidden lg:table-cell"><span className="text-xs text-[var(--color-text-muted)]">{date}</span></td>
-                    <td className="p-3 align-middle">
+                    <td className="p-3 max-sm:px-2 max-sm:py-2.5 align-middle"><span className={`font-bold text-[13px] max-sm:text-[12px] tabular-nums ${gpaColor}`}>{s.gpa.toFixed(2)}</span></td>
+                    <td className="p-3 max-sm:px-2 max-sm:py-2.5 align-middle hidden lg:table-cell"><span className="text-xs text-[var(--color-text-muted)]">{date}</span></td>
+                    <td className="p-3 max-sm:px-2 max-sm:py-2.5 align-middle">
                       <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => onEdit(s.id)} className="w-7 h-7 rounded-[var(--radius-xs)] flex items-center justify-center text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-primary-glow)] hover:text-[var(--color-primary-light)] transition-all">
                           <i className="fa-solid fa-pen-to-square" />

@@ -17,7 +17,7 @@ export default function ConfirmModal({ studentId, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="modal modal-sm w-full max-w-[360px] rounded-2xl border border-[var(--color-border)] p-7 text-center"
+      <div className="modal modal-sm w-full max-w-[360px] rounded-2xl border border-[var(--color-border)] p-7 max-sm:p-5 text-center"
         style={{ background: "var(--color-bg-card)" }}>
         <div className="text-[36px] text-[var(--color-warning)] mb-3.5">
           <i className="fa-solid fa-triangle-exclamation" />

@@ -85,7 +85,7 @@ export default function AddStudentForm() {
 
   return (
     <div className="animate-[fadeSlideIn_0.3s_ease]">
-      <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-7 max-w-[660px]"
+      <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-7 max-sm:p-4 max-w-[660px]"
         style={{ background: "var(--color-bg-card)" }}>
         <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
           <i className={`fa-solid ${isEdit ? "fa-floppy-disk" : "fa-user-plus"} text-[var(--color-primary-light)]`} />
