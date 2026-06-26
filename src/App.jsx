@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
+import { ToastProvider } from "./components/Toast";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import BottomNav from "./components/BottomNav";
@@ -16,19 +17,10 @@ function AppContent() {
   const [detailId, setDetailId] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [toasts, setToasts] = useState([]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
-
-  const showToast = useCallback((msg, type = "info") => {
-    const id = Date.now() + Math.random();
-    setToasts((prev) => [...prev, { id, msg, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 3000);
-  }, []);
 
   useEffect(() => {
     const handler = (ev) => {
@@ -86,29 +78,6 @@ function AppContent() {
       {detailId && <StudentDetailModal studentId={detailId} onClose={() => setDetailId(null)} />}
       {confirmId && <ConfirmModal studentId={confirmId} onClose={() => setConfirmId(null)} />}
       <ShortcutsPanel open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
-
-      <div className="fixed bottom-5 right-5 max-md:bottom-[76px] max-sm:right-3 flex flex-col gap-2 z-[9999] pointer-events-none">
-        {toasts.map((t) => (
-          <div key={t.id}
-            className={`pointer-events-auto flex items-center gap-2 px-4 py-2.5 text-[13px] rounded-[var(--radius-sm)] border border-[var(--color-border)] animate-[toastSlideIn_0.3s_ease] max-w-[300px] max-md:max-w-full ${
-              t.type === "success" ? "border-l-[3px] border-l-[var(--color-success)]" :
-              t.type === "error" ? "border-l-[3px] border-l-[var(--color-danger)]" :
-              "border-l-[3px] border-l-[var(--color-info)]"
-            }`}
-            style={{ background: "var(--color-bg-card)", boxShadow: "var(--shadow-lg)" }}>
-            <i className={`fa-solid fa-${
-              t.type === "success" ? "circle-check" :
-              t.type === "error" ? "circle-xmark" :
-              "circle-info"
-            } text-sm flex-shrink-0 ${
-              t.type === "success" ? "text-[var(--color-success)]" :
-              t.type === "error" ? "text-[var(--color-danger)]" :
-              "text-[var(--color-info)]"
-            }`} />
-            <span>{t.msg}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -116,7 +85,9 @@ function AppContent() {
 export default function App() {
   return (
     <AppProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </AppProvider>
   );
 }
