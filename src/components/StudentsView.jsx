@@ -65,7 +65,7 @@ export default function StudentsView({ onDetail, onEdit, onDelete }) {
             <div key={s.id}
               onClick={() => onDetail(s.id)}
               className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-3.5 flex items-center gap-3 cursor-pointer transition-all hover:border-[var(--color-border-light)] active:scale-[0.98]"
-              style={{ background: "var(--color-bg-card)" }}>
+              style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}>
               <div className="w-10 h-10 rounded-full bg-[var(--color-primary-glow)] text-[var(--color-primary-light)] text-xs font-bold flex items-center justify-center flex-shrink-0">
                 {getInitials(s.name)}
               </div>

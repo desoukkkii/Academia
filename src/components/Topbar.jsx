@@ -8,7 +8,7 @@ const TITLES = {
   add: "Add Student",
 };
 
-export default function Topbar({ onMenuToggle, onShortcutsToggle }) {
+export default function Topbar({ onShortcutsToggle }) {
   const { view, editingId, theme, toggleTheme, setFilters, setView } = useApp();
   const [searchVal, setSearchVal] = useState("");
   const inputRef = useRef(null);
@@ -28,10 +28,7 @@ export default function Topbar({ onMenuToggle, onShortcutsToggle }) {
     <header className="h-16 max-sm:h-14 flex items-center justify-between px-5 max-sm:px-3 sticky top-0 z-100 border-b border-[var(--color-border)]"
       style={{ background: "color-mix(in oklab, var(--color-bg-elevated) 70%, transparent)", backdropFilter: "blur(20px) saturate(160%)" }}>
       <div className="flex items-center gap-3">
-        <button onClick={onMenuToggle} className="md:hidden text-[var(--color-text-muted)] text-[17px] p-1.5 rounded-[var(--radius-xs)] hover:bg-[var(--color-surface-1)] hover:text-[var(--color-text)] transition-all">
-          <i className="fa-solid fa-bars" />
-        </button>
-        <h1 className="text-[17px] font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-[17px] max-md:text-[16px] font-semibold tracking-tight">{title}</h1>
       </div>
 
       <div className="flex items-center gap-2.5">

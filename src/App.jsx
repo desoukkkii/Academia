@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { AppProvider, useApp } from "./context/AppContext";
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
+import BottomNav from "./components/BottomNav";
 import Dashboard from "./components/Dashboard";
 import StudentsView from "./components/StudentsView";
 import AttendanceView from "./components/AttendanceView";
@@ -10,16 +11,8 @@ import StudentDetailModal from "./components/StudentDetailModal";
 import ConfirmModal from "./components/ConfirmModal";
 import ShortcutsPanel from "./components/ShortcutsPanel";
 
-const VIEW_COMPONENTS = {
-  dashboard: Dashboard,
-  students: StudentsView,
-  attendance: AttendanceView,
-  add: AddStudentForm,
-};
-
 function AppContent() {
   const { view, theme, toggleTheme, setView, setEditing, setFilters } = useApp();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [detailId, setDetailId] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -37,7 +30,6 @@ function AppContent() {
     }, 3000);
   }, []);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handler = (ev) => {
       if (ev.target.tagName === "INPUT" || ev.target.tagName === "SELECT" || ev.target.tagName === "TEXTAREA") return;
@@ -58,23 +50,23 @@ function AppContent() {
     return () => document.removeEventListener("keydown", handler);
   }, [toggleTheme, setView]);
 
-  const ViewComponent = VIEW_COMPONENTS[view] || Dashboard;
-
   return (
     <div className="flex min-h-screen min-h-dvh"
       style={{
         backgroundImage: "radial-gradient(1200px 600px at 12% -10%, var(--color-primary-glow), transparent 60%), radial-gradient(900px 500px at 100% 0%, var(--color-secondary-glow), transparent 55%)",
         backgroundAttachment: "fixed",
       }}>
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {/* Sidebar: md+ only */}
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
 
       <div className="flex-1 flex flex-col min-h-screen ml-0 md:ml-[232px]">
         <Topbar
-          onMenuToggle={() => setSidebarOpen((p) => !p)}
           onShortcutsToggle={() => setShortcutsOpen((p) => !p)}
         />
 
-        <main className="flex-1 p-6 max-sm:p-3 max-sm:pb-9" id="main">
+        <main className="flex-1 p-6 max-md:px-4 max-md:pt-4 max-md:pb-[88px] lg:p-6" id="main">
           {view === "dashboard" && <Dashboard onStudentClick={(id) => setDetailId(id)} />}
           {view === "students" && (
             <StudentsView
@@ -88,14 +80,17 @@ function AppContent() {
         </main>
       </div>
 
+      {/* Bottom Navigation: mobile only */}
+      <BottomNav />
+
       {detailId && <StudentDetailModal studentId={detailId} onClose={() => setDetailId(null)} />}
       {confirmId && <ConfirmModal studentId={confirmId} onClose={() => setConfirmId(null)} />}
       <ShortcutsPanel open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
 
-      <div className="fixed bottom-5 right-5 max-sm:right-3 max-sm:bottom-3 flex flex-col gap-2 z-[9999] pointer-events-none">
+      <div className="fixed bottom-5 right-5 max-md:bottom-[76px] max-sm:right-3 flex flex-col gap-2 z-[9999] pointer-events-none">
         {toasts.map((t) => (
           <div key={t.id}
-            className={`pointer-events-auto flex items-center gap-2 px-4 py-2.5 text-[13px] rounded-[var(--radius-sm)] border border-[var(--color-border)] animate-[toastSlideIn_0.3s_ease] max-w-[300px] ${
+            className={`pointer-events-auto flex items-center gap-2 px-4 py-2.5 text-[13px] rounded-[var(--radius-sm)] border border-[var(--color-border)] animate-[toastSlideIn_0.3s_ease] max-w-[300px] max-md:max-w-full ${
               t.type === "success" ? "border-l-[3px] border-l-[var(--color-success)]" :
               t.type === "error" ? "border-l-[3px] border-l-[var(--color-danger)]" :
               "border-l-[3px] border-l-[var(--color-info)]"

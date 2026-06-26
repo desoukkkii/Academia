@@ -7,39 +7,30 @@ const NAV_ITEMS = [
   { view: "add", icon: "fa-user-plus", label: "Add Student" },
 ];
 
-export default function Sidebar({ open, onClose }) {
+export default function Sidebar() {
   const { view, setView, handleExportCSV, theme, toggleTheme } = useApp();
 
   return (
-    <>
-      {open && (
-        <div className="fixed inset-0 z-[199] bg-black/50 md:hidden" onClick={onClose} />
-      )}
-      <aside
-        className={`fixed top-0 left-0 bottom-0 z-200 w-[232px] md:w-[232px] flex flex-col transition-transform duration-[0.22s] ease-[cubic-bezier(0.32,0.72,0,1)] ${
-          open ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 bg-[var(--color-bg-elevated)] border-r border-[var(--color-border)] shadow-[4px_0_32px_rgba(0,0,0,0.5)] md:shadow-none`}
-        style={{ background: "linear-gradient(180deg, var(--color-bg-elevated), var(--color-bg))" }}
-      >
+    <aside
+      className="fixed top-0 left-0 bottom-0 z-200 w-[232px] flex flex-col bg-[var(--color-bg-elevated)] border-r border-[var(--color-border)] shadow-[4px_0_32px_rgba(0,0,0,0.5)]"
+      style={{ background: "linear-gradient(180deg, var(--color-bg-elevated), var(--color-bg))" }}
+    >
       <div className="flex items-center gap-2.5 px-4 pb-3.5 pt-[18px] border-b border-[var(--color-border)]">
         <div className="w-[34px] h-[34px] rounded-[var(--radius-xs)] flex items-center justify-center text-base text-white flex-shrink-0"
           style={{ background: "linear-gradient(135deg, var(--color-primary), var(--color-secondary))" }}>
           <i className="fa-solid fa-atom" />
         </div>
-        <div className="flex-1">
+        <div>
           <div className="text-base font-bold tracking-tight">Quantio</div>
           <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider block -mt-0.5">Student Intelligence</div>
         </div>
-        <button onClick={onClose} className="md:hidden w-8 h-8 rounded-full flex items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-surface-1)] hover:text-[var(--color-text)] transition-all -mr-1">
-          <i className="fa-solid fa-xmark text-lg" />
-        </button>
       </div>
 
       <nav className="flex-1 p-3 flex flex-col gap-0.5">
         {NAV_ITEMS.map((item) => (
           <button
             key={item.view}
-            onClick={() => { setView(item.view); if (onClose) onClose(); }}
+            onClick={() => setView(item.view)}
             className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-sm)] text-[13.5px] font-normal transition-all duration-[0.22s] relative ${
               view === item.view
                 ? "text-[var(--color-primary-light)] font-medium"
@@ -57,7 +48,7 @@ export default function Sidebar({ open, onClose }) {
       </nav>
 
       <div className="p-2 border-t border-[var(--color-border)] flex flex-col gap-0.5">
-        <button onClick={toggleTheme} className="md:hidden flex items-center gap-2.5 px-3 py-[9px] rounded-[var(--radius-sm)] text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-1)] transition-all">
+        <button onClick={toggleTheme} className="flex items-center gap-2.5 px-3 py-[9px] rounded-[var(--radius-sm)] text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-1)] transition-all">
           <i className={`fa-solid ${theme === "dark" ? "fa-sun" : "fa-moon"} w-[18px] text-center flex-shrink-0`} />
           <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
         </button>
@@ -68,7 +59,6 @@ export default function Sidebar({ open, onClose }) {
         <ImportButton />
       </div>
     </aside>
-    </>
   );
 }
 

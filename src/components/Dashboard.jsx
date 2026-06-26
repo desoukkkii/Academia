@@ -5,64 +5,63 @@ import { getInitials, esc } from "../utils";
 export default function Dashboard({ onStudentClick }) {
   const { stats, students, activity } = useApp();
   const recent = students.slice(0, 5);
-  const avgAtt = stats.avgAtt !== null ? stats.avgAtt : 0;
-  const ringDash = 226.2 - (226.2 * avgAtt) / 100;
 
   return (
-    <div className="animate-[fadeSlideIn_0.4s_cubic-bezier(0.32,0.72,0,1)]">
-      <div className="grid grid-cols-2 max-sm:grid-cols-1 lg:grid-cols-4 gap-3.5 max-sm:gap-2.5 mb-5">
+    <div className="animate-[fadeSlideIn_0.4s_cubic-bezier(0.32,0.72,0,1)] max-md:pb-2">
+      {/* Stat Cards - horizontal scroll on mobile, grid on tablet+ */}
+      <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory scrollbar-none -mx-4 md:mx-0 px-4 md:px-0 pb-1 md:pb-0 mb-5 md:mb-5">
         <StatCard icon="fa-users" accent="primary" label="Total Students" value={String(stats.total)} />
         <StatCard icon="fa-star" accent="secondary" label="Average GPA" value={stats.avgGpa.toFixed(2)} />
         <StatCard icon="fa-trophy" accent="accent" label="Top GPA" value={stats.topGpa !== null ? stats.topGpa.toFixed(2) : "—"} />
         <StatCard icon="fa-calendar-check" accent="warning" label="Avg. Attendance" value={stats.avgAtt !== null ? `${stats.avgAtt}%` : "—"} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-3.5">
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-5 max-sm:p-4"
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-3.5 max-md:gap-3">
+        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-5 max-md:p-4"
           style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}>
-          <h3 className="text-sm font-semibold mb-4 max-sm:mb-3 flex items-center gap-2">
+          <h3 className="text-sm max-md:text-[13px] font-semibold mb-4 max-md:mb-3 flex items-center gap-2">
             <i className="fa-solid fa-chart-column text-[var(--color-primary-light)] text-sm" />
             Students by Grade
           </h3>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 max-md:gap-2">
             {[9, 10, 11, 12].map((g) => {
               const maxCount = Math.max(...Object.values(stats.byGrade), 1);
               const pct = Math.max((stats.byGrade[g] / maxCount) * 100, 0);
               return (
-                <div key={g} className="flex items-center gap-2.5">
-                  <span className="text-xs font-medium text-[var(--color-text-muted)] w-[55px] flex-shrink-0">Grade {g}</span>
-                  <div className="flex-1 bg-[var(--color-surface-2)] rounded-full h-1.5 overflow-hidden">
+                <div key={g} className="flex items-center gap-2.5 max-md:gap-2">
+                  <span className="text-xs max-md:text-[11px] font-medium text-[var(--color-text-muted)] w-[55px] max-md:w-[50px] flex-shrink-0">Grade {g}</span>
+                  <div className="flex-1 bg-[var(--color-surface-2)] rounded-full h-1.5 max-md:h-1 overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-[0.6s]"
                       style={{ width: `${pct}%`, background: "linear-gradient(90deg, var(--color-primary), var(--color-secondary))" }} />
                   </div>
-                  <span className="text-xs font-semibold text-[var(--color-text-muted)] w-5 text-right flex-shrink-0">{stats.byGrade[g]}</span>
+                  <span className="text-xs max-md:text-[11px] font-semibold text-[var(--color-text-muted)] w-5 text-right flex-shrink-0">{stats.byGrade[g]}</span>
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-5 max-sm:p-4"
+        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-5 max-md:p-4"
           style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}>
-          <h3 className="text-sm font-semibold mb-4 max-sm:mb-3 flex items-center gap-2">
+          <h3 className="text-sm max-md:text-[13px] font-semibold mb-4 max-md:mb-3 flex items-center gap-2">
             <i className="fa-solid fa-clock-rotate-left text-[var(--color-primary-light)] text-sm" />
             Recently Added
           </h3>
           {recent.length ? (
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-2 max-md:gap-1.5">
               {recent.map((st) => (
                 <li key={st.id}
                   onClick={() => onStudentClick(st.id)}
-                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-[var(--radius-sm)] cursor-pointer transition-all hover:bg-[var(--color-bg-hover)]"
+                  className="flex items-center gap-2.5 max-md:gap-2 px-3 py-2.5 max-md:px-2.5 max-md:py-2 rounded-[var(--radius-sm)] cursor-pointer transition-all hover:bg-[var(--color-bg-hover)] active:scale-[0.98]"
                   style={{ background: "var(--color-surface-1)" }}>
-                  <div className="w-8 h-8 rounded-full bg-[var(--color-primary-glow)] text-[var(--color-primary-light)] text-[11px] font-bold flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 max-md:w-7 max-md:h-7 rounded-full bg-[var(--color-primary-glow)] text-[var(--color-primary-light)] text-[11px] max-md:text-[10px] font-bold flex items-center justify-center flex-shrink-0">
                     {getInitials(st.name)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-medium truncate">{esc(st.name)}</div>
-                    <div className="text-[11px] text-[var(--color-text-muted)]">Grade {st.grade}</div>
+                    <div className="text-[13px] max-md:text-[12px] font-medium truncate">{esc(st.name)}</div>
+                    <div className="text-[11px] max-md:text-[10px] text-[var(--color-text-muted)]">Grade {st.grade}</div>
                   </div>
-                  <span className="font-bold text-[13px] text-[var(--color-secondary)] flex-shrink-0 tabular-nums">{st.gpa.toFixed(2)}</span>
+                  <span className="font-bold text-[13px] max-md:text-[12px] text-[var(--color-secondary)] flex-shrink-0 tabular-nums">{st.gpa.toFixed(2)}</span>
                 </li>
               ))}
             </ul>
@@ -72,15 +71,15 @@ export default function Dashboard({ onStudentClick }) {
         </div>
       </div>
 
-      <div className="mt-5 rounded-[var(--radius-card)] border border-[var(--color-border)] p-5 max-sm:p-4"
+      <div className="mt-5 max-md:mt-3 rounded-[var(--radius-card)] border border-[var(--color-border)] p-5 max-md:p-4"
         style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}>
-        <h3 className="text-sm font-semibold mb-3.5 flex items-center gap-2">
+        <h3 className="text-sm max-md:text-[13px] font-semibold mb-3.5 flex items-center gap-2">
           <i className="fa-solid fa-bolt text-[var(--color-accent)] text-sm" />
           Recent Activity
         </h3>
-        <div className="flex flex-col gap-2.5 max-h-[200px] overflow-y-auto">
+        <div className="flex flex-col gap-2.5 max-md:gap-2 max-h-[200px] max-md:max-h-[160px] overflow-y-auto">
           {activity.length ? activity.slice(0, 10).map((a, i) => (
-            <div key={i} className="flex items-start gap-2.5 py-2 border-b border-[var(--color-border)] last:border-b-0 text-[13px]">
+            <div key={i} className="flex items-start gap-2.5 max-md:gap-2 py-2 max-md:py-1.5 border-b border-[var(--color-border)] last:border-b-0 text-[13px] max-md:text-[12px]">
               <span className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${
                 a.type === "success" ? "bg-[var(--color-success)]" :
                 a.type === "error" ? "bg-[var(--color-danger)]" :
@@ -88,7 +87,7 @@ export default function Dashboard({ onStudentClick }) {
                 "bg-[var(--color-info)]"
               }`} />
               <span className="text-[var(--color-text)]">{esc(a.text)}</span>
-              <span className="ml-auto text-[11px] text-[var(--color-text-dim)] whitespace-nowrap flex-shrink-0">{a.time}</span>
+              <span className="ml-auto text-[11px] max-md:text-[10px] text-[var(--color-text-dim)] whitespace-nowrap flex-shrink-0">{a.time}</span>
             </div>
           )) : (
             <p className="text-[13px] text-[var(--color-text-dim)] py-2">No activity yet.</p>
@@ -132,7 +131,7 @@ function StatCard({ icon, accent, label, value }) {
   }[accent];
 
   return (
-    <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-[18px] max-sm:p-3.5 flex items-center gap-3.5 max-sm:gap-3 relative overflow-hidden transition-all duration-[0.22s] hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)] hover:border-[var(--color-border-light)] cursor-default active:scale-[0.98] max-sm:active:scale-[0.99]"
+    <div className="snap-start shrink-0 w-[180px] md:w-auto md:shrink rounded-[var(--radius-card)] border border-[var(--color-border)] p-[18px] max-md:p-3.5 flex items-center gap-3.5 max-md:gap-3 relative overflow-hidden transition-all duration-[0.22s] hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)] hover:border-[var(--color-border-light)] cursor-default active:scale-[0.98] max-md:active:scale-[0.99]"
       style={{
         background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)",
         backdropFilter: "blur(8px)",
@@ -144,13 +143,13 @@ function StatCard({ icon, accent, label, value }) {
           WebkitMaskComposite: "xor",
           maskComposite: "exclude",
         }} />
-      <div className="w-11 h-11 max-sm:w-9 max-sm:h-9 rounded-[var(--radius-sm)] flex items-center justify-center text-lg max-sm:text-base flex-shrink-0"
+      <div className="w-11 h-11 max-md:w-10 max-md:h-10 rounded-[var(--radius-sm)] flex items-center justify-center text-lg max-md:text-base flex-shrink-0"
         style={{ background: iconBg.bg, color: iconBg.color }}>
         <i className={`fa-solid ${icon}`} />
       </div>
       <div>
-        <span className="block text-[11px] max-sm:text-[10px] text-[var(--color-text-muted)] uppercase tracking-[0.5px] mb-0.5">{label}</span>
-        <span className="block text-[26px] max-sm:text-[20px] font-extrabold leading-[1.1] tracking-tight tabular-nums">{displayValue}</span>
+        <span className="block text-[11px] max-md:text-[10px] text-[var(--color-text-muted)] uppercase tracking-[0.5px] mb-0.5">{label}</span>
+        <span className="block text-[26px] max-md:text-[22px] font-extrabold leading-[1.1] tracking-tight tabular-nums">{displayValue}</span>
       </div>
     </div>
   );

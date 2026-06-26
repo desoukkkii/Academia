@@ -85,14 +85,14 @@ export default function AddStudentForm() {
 
   return (
     <div className="animate-[fadeSlideIn_0.3s_ease]">
-      <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-7 max-sm:p-4 max-w-[660px]"
+      <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-7 max-md:p-4 max-w-[660px]"
         style={{ background: "var(--color-bg-card)" }}>
-        <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
+        <h2 className="text-lg max-md:text-base font-bold mb-6 max-md:mb-4 flex items-center gap-2">
           <i className={`fa-solid ${isEdit ? "fa-floppy-disk" : "fa-user-plus"} text-[var(--color-primary-light)]`} />
           {isEdit ? "Edit Student" : "Add Student"}
         </h2>
         <form onSubmit={handleSubmit} noValidate>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-[18px]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-[18px] max-md:gap-3">
             <FormGroup label="Full Name" required id="fName" value={form.name} onChange={handleFieldChange} error={fieldError("name")} placeholder="Emma Watson" />
             <FormGroup label="Student ID" required id="fId" value={form.studentId} onChange={handleFieldChange} error={fieldError("studentId")} placeholder="STU-001" />
             <FormGroup label="Email" required id="fEmail" type="email" value={form.email} onChange={handleFieldChange} error={fieldError("email")} placeholder="emma@school.edu" />
@@ -100,13 +100,13 @@ export default function AddStudentForm() {
             <FormGroup label="GPA (0.0–4.0)" required id="fGpa" type="number" value={form.gpa} onChange={handleFieldChange} error={fieldError("gpa")} placeholder="3.50" step="0.01" min="0" max="4" />
             <FormGroup label="Enrollment Date" required id="fDate" type="date" value={form.enrollDate} onChange={handleFieldChange} error={fieldError("enrollDate")} />
           </div>
-          <div className="mt-6 flex gap-2.5 justify-end">
+          <div className="mt-6 max-md:mt-4 flex gap-2.5 justify-end max-md:flex-col">
             {isEdit && (
-              <button type="button" onClick={cancelEdit} className="inline-flex items-center gap-1.5 px-5 py-[9px] rounded-full text-[13px] font-medium border border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] transition-all">
+              <button type="button" onClick={cancelEdit} className="inline-flex items-center justify-center gap-1.5 px-5 py-[11px] max-md:py-3 rounded-full text-[13px] font-medium border border-[var(--color-border)] bg-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] transition-all active:scale-95">
                 Cancel
               </button>
             )}
-            <button type="submit" className="inline-flex items-center gap-1.5 px-5 py-[9px] rounded-full text-[13px] font-medium text-white transition-all hover:shadow-[0_4px_20px_var(--color-primary-glow)] hover:-translate-y-0.5 active:translate-y-0"
+            <button type="submit" className="inline-flex items-center justify-center gap-1.5 px-5 py-[11px] max-md:py-3 rounded-full text-[13px] font-medium text-white transition-all hover:shadow-[0_4px_20px_var(--color-primary-glow)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95"
               style={{ background: "var(--color-primary)" }}>
               <i className={`fa-solid ${isEdit ? "fa-floppy-disk" : "fa-plus"}`} />
               {isEdit ? "Save Changes" : "Add Student"}

@@ -116,6 +116,21 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @media (max-width: 639px) {
   .modal-mobile-bottom {
     animation: slideUp 0.3s cubic-bezier(0.32, 0.72, 0, 1);
