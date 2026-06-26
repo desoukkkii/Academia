@@ -54,13 +54,13 @@ export default function Topbar({ onMenuToggle, onShortcutsToggle }) {
           <span className="text-[10px] text-[var(--color-text-dim)] bg-[var(--color-surface-1)] px-1.5 py-0.5 rounded hidden focus-within:inline">/</span>
         </div>
 
-        <button onClick={toggleTheme} className="w-[34px] h-[34px] rounded-full flex items-center justify-center text-[15px] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-1)] hover:text-[var(--color-text)] transition-all" title="Toggle theme">
+        <button onClick={toggleTheme} className="hidden sm:inline-flex w-[34px] h-[34px] rounded-full items-center justify-center text-[15px] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-1)] hover:text-[var(--color-text)] transition-all" title="Toggle theme">
           <i className={`fa-solid ${theme === "dark" ? "fa-moon" : "fa-sun"}`} />
         </button>
-        <button onClick={onShortcutsToggle} className="w-[34px] h-[34px] rounded-full flex items-center justify-center text-[15px] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-1)] hover:text-[var(--color-text)] transition-all" title="Keyboard shortcuts">
+        <button onClick={onShortcutsToggle} className="hidden md:inline-flex w-[34px] h-[34px] rounded-full items-center justify-center text-[15px] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-1)] hover:text-[var(--color-text)] transition-all" title="Keyboard shortcuts">
           <i className="fa-solid fa-keyboard" />
         </button>
-        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+        <div className="w-8 h-8 max-sm:w-7 max-sm:h-7 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
           style={{ background: "linear-gradient(135deg, var(--color-primary), var(--color-accent))", boxShadow: "0 6px 20px -6px var(--color-primary-glow), 0 0 0 1px rgba(255,255,255,0.08) inset" }}>
           Q
         </div>

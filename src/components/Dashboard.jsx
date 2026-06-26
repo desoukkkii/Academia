@@ -132,7 +132,7 @@ function StatCard({ icon, accent, label, value }) {
   }[accent];
 
   return (
-    <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-[18px] max-sm:p-3.5 flex items-center gap-3.5 max-sm:gap-2.5 relative overflow-hidden transition-all duration-[0.22s] hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)] hover:border-[var(--color-border-light)] cursor-default"
+    <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-[18px] max-sm:p-3.5 flex items-center gap-3.5 max-sm:gap-3 relative overflow-hidden transition-all duration-[0.22s] hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)] hover:border-[var(--color-border-light)] cursor-default active:scale-[0.98] max-sm:active:scale-[0.99]"
       style={{
         background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)",
         backdropFilter: "blur(8px)",

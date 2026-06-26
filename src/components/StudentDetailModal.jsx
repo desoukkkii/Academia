@@ -13,9 +13,10 @@ export default function StudentDetailModal({ studentId, onClose }) {
   const gpaColor = gpaTier === "high" ? "var(--color-success)" : gpaTier === "low" ? "var(--color-danger)" : "var(--color-warning)";
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] p-5"
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-[1000] p-0 sm:p-5"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full max-w-[480px] rounded-2xl border border-[var(--color-border)] p-7 max-sm:p-4 relative max-h-[90vh] overflow-y-auto"
+      <div className="w-full sm:max-w-[480px] rounded-t-2xl sm:rounded-2xl border border-[var(--color-border)] p-7 max-sm:p-5 relative max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-[fadeSlideUp_0.2s_ease]"
+        style={{ background: "var(--color-bg-card)" }}>
         style={{ background: "var(--color-bg-card)" }}>
         <button onClick={onClose} className="absolute top-3.5 right-3.5 w-7 h-7 rounded-full bg-[var(--color-surface-1)] text-[var(--color-text-muted)] flex items-center justify-center text-[13px] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)] transition-all">
           <i className="fa-solid fa-xmark" />

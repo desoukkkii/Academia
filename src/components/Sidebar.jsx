@@ -8,7 +8,7 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar({ open, onClose }) {
-  const { view, setView, handleExportCSV } = useApp();
+  const { view, setView, handleExportCSV, theme, toggleTheme } = useApp();
 
   return (
     <>
@@ -26,10 +26,13 @@ export default function Sidebar({ open, onClose }) {
           style={{ background: "linear-gradient(135deg, var(--color-primary), var(--color-secondary))" }}>
           <i className="fa-solid fa-atom" />
         </div>
-        <div>
+        <div className="flex-1">
           <div className="text-base font-bold tracking-tight">Quantio</div>
           <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider block -mt-0.5">Student Intelligence</div>
         </div>
+        <button onClick={onClose} className="md:hidden w-8 h-8 rounded-full flex items-center justify-center text-[var(--color-text-muted)] hover:bg-[var(--color-surface-1)] hover:text-[var(--color-text)] transition-all -mr-1">
+          <i className="fa-solid fa-xmark text-lg" />
+        </button>
       </div>
 
       <nav className="flex-1 p-3 flex flex-col gap-0.5">
@@ -54,6 +57,10 @@ export default function Sidebar({ open, onClose }) {
       </nav>
 
       <div className="p-2 border-t border-[var(--color-border)] flex flex-col gap-0.5">
+        <button onClick={toggleTheme} className="md:hidden flex items-center gap-2.5 px-3 py-[9px] rounded-[var(--radius-sm)] text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-1)] transition-all">
+          <i className={`fa-solid ${theme === "dark" ? "fa-sun" : "fa-moon"} w-[18px] text-center flex-shrink-0`} />
+          <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+        </button>
         <button onClick={handleExportCSV} className="flex items-center gap-2.5 px-3 py-[9px] rounded-[var(--radius-sm)] text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-1)] transition-all">
           <i className="fa-solid fa-file-arrow-down w-[18px] text-center flex-shrink-0" />
           <span>Export CSV</span>
