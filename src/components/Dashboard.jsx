@@ -7,61 +7,75 @@ export default function Dashboard({ onStudentClick }) {
   const recent = students.slice(0, 5);
 
   return (
-    <div className="animate-[fadeSlideIn_0.4s_cubic-bezier(0.32,0.72,0,1)] max-md:pb-2">
-      {/* Stat Cards - horizontal scroll on mobile, grid on tablet+ */}
-      <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-3 overflow-x-auto md:overflow-visible snap-x snap-mandatory scrollbar-none -mx-4 md:mx-0 px-4 md:px-0 pb-1 md:pb-0 mb-5 md:mb-5">
-        <StatCard icon="fa-users" accent="primary" label="Total Students" value={String(stats.total)} />
-        <StatCard icon="fa-star" accent="secondary" label="Average GPA" value={stats.avgGpa.toFixed(2)} />
+    <div className="animate-[fadeSlideIn_0.4s_cubic-bezier(0.32,0.72,0,1)] max-md:pb-4">
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2.5 md:gap-3 mb-4 md:mb-5">
+        <StatCard icon="fa-users" accent="primary" label="Students" value={String(stats.total)} />
+        <StatCard icon="fa-star" accent="secondary" label="Avg GPA" value={stats.avgGpa.toFixed(2)} />
         <StatCard icon="fa-trophy" accent="accent" label="Top GPA" value={stats.topGpa !== null ? stats.topGpa.toFixed(2) : "—"} />
-        <StatCard icon="fa-calendar-check" accent="warning" label="Avg. Attendance" value={stats.avgAtt !== null ? `${stats.avgAtt}%` : "—"} />
+        <StatCard icon="fa-calendar-check" accent="warning" label="Attendance" value={stats.avgAtt !== null ? `${stats.avgAtt}%` : "—"} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-3.5 max-md:gap-3">
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-5 max-md:p-4"
-          style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}>
-          <h3 className="text-sm max-md:text-[13px] font-semibold mb-4 max-md:mb-3 flex items-center gap-2">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-3 md:gap-3.5">
+        {/* Students by Grade */}
+        <div
+          className="rounded-2xl border border-[var(--color-border)] p-4 md:p-5"
+          style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}
+        >
+          <h3 className="text-[13px] md:text-sm font-semibold mb-3 md:mb-4 flex items-center gap-2">
             <i className="fa-solid fa-chart-column text-[var(--color-primary-light)] text-sm" />
             Students by Grade
           </h3>
-          <div className="flex flex-col gap-3 max-md:gap-2">
+          <div className="flex flex-col gap-2.5 md:gap-3">
             {[9, 10, 11, 12].map((g) => {
               const maxCount = Math.max(...Object.values(stats.byGrade), 1);
               const pct = Math.max((stats.byGrade[g] / maxCount) * 100, 0);
               return (
-                <div key={g} className="flex items-center gap-2.5 max-md:gap-2">
-                  <span className="text-xs max-md:text-[11px] font-medium text-[var(--color-text-muted)] w-[55px] max-md:w-[50px] flex-shrink-0">Grade {g}</span>
-                  <div className="flex-1 bg-[var(--color-surface-2)] rounded-full h-1.5 max-md:h-1 overflow-hidden">
-                    <div className="h-full rounded-full transition-all duration-[0.6s]"
-                      style={{ width: `${pct}%`, background: "linear-gradient(90deg, var(--color-primary), var(--color-secondary))" }} />
+                <div key={g} className="flex items-center gap-2 md:gap-2.5">
+                  <span className="text-[11px] md:text-xs font-medium text-[var(--color-text-muted)] w-[48px] md:w-[55px] flex-shrink-0">
+                    Gr {g}
+                  </span>
+                  <div className="flex-1 bg-[var(--color-surface-2)] rounded-full h-2 md:h-2.5 overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-[0.6s]"
+                      style={{ width: `${pct}%`, background: "linear-gradient(90deg, var(--color-primary), var(--color-secondary))" }}
+                    />
                   </div>
-                  <span className="text-xs max-md:text-[11px] font-semibold text-[var(--color-text-muted)] w-5 text-right flex-shrink-0">{stats.byGrade[g]}</span>
+                  <span className="text-[11px] md:text-xs font-semibold text-[var(--color-text-muted)] w-5 text-right flex-shrink-0 tabular-nums">
+                    {stats.byGrade[g]}
+                  </span>
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-5 max-md:p-4"
-          style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}>
-          <h3 className="text-sm max-md:text-[13px] font-semibold mb-4 max-md:mb-3 flex items-center gap-2">
+        {/* Recently Added */}
+        <div
+          className="rounded-2xl border border-[var(--color-border)] p-4 md:p-5"
+          style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}
+        >
+          <h3 className="text-[13px] md:text-sm font-semibold mb-3 md:mb-4 flex items-center gap-2">
             <i className="fa-solid fa-clock-rotate-left text-[var(--color-primary-light)] text-sm" />
-            Recently Added
+            Recent
           </h3>
           {recent.length ? (
-            <ul className="flex flex-col gap-2 max-md:gap-1.5">
+            <ul className="flex flex-col gap-1.5 md:gap-2">
               {recent.map((st) => (
-                <li key={st.id}
+                <li
+                  key={st.id}
                   onClick={() => onStudentClick(st.id)}
-                  className="flex items-center gap-2.5 max-md:gap-2 px-3 py-2.5 max-md:px-2.5 max-md:py-2 rounded-[var(--radius-sm)] cursor-pointer transition-all hover:bg-[var(--color-bg-hover)] active:scale-[0.98]"
-                  style={{ background: "var(--color-surface-1)" }}>
-                  <div className="w-8 h-8 max-md:w-7 max-md:h-7 rounded-full bg-[var(--color-primary-glow)] text-[var(--color-primary-light)] text-[11px] max-md:text-[10px] font-bold flex items-center justify-center flex-shrink-0">
+                  className="flex items-center gap-2.5 md:gap-3 px-2.5 md:px-3 py-2 md:py-2.5 rounded-xl cursor-pointer transition-all hover:bg-[var(--color-bg-hover)] active:scale-[0.98]"
+                  style={{ background: "var(--color-surface-1)" }}
+                >
+                  <div className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-[var(--color-primary-glow)] text-[var(--color-primary-light)] text-[10px] md:text-[11px] font-bold flex items-center justify-center flex-shrink-0">
                     {getInitials(st.name)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[13px] max-md:text-[12px] font-medium truncate">{esc(st.name)}</div>
-                    <div className="text-[11px] max-md:text-[10px] text-[var(--color-text-muted)]">Grade {st.grade}</div>
+                    <div className="text-[12px] md:text-[13px] font-medium truncate">{esc(st.name)}</div>
+                    <div className="text-[10px] md:text-[11px] text-[var(--color-text-muted)]">Grade {st.grade}</div>
                   </div>
-                  <span className="font-bold text-[13px] max-md:text-[12px] text-[var(--color-secondary)] flex-shrink-0 tabular-nums">{st.gpa.toFixed(2)}</span>
+                  <span className="font-bold text-[12px] md:text-[13px] text-[var(--color-secondary)] flex-shrink-0 tabular-nums">{st.gpa.toFixed(2)}</span>
                 </li>
               ))}
             </ul>
@@ -71,25 +85,38 @@ export default function Dashboard({ onStudentClick }) {
         </div>
       </div>
 
-      <div className="mt-5 max-md:mt-3 rounded-[var(--radius-card)] border border-[var(--color-border)] p-5 max-md:p-4"
-        style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}>
-        <h3 className="text-sm max-md:text-[13px] font-semibold mb-3.5 flex items-center gap-2">
+      {/* Recent Activity */}
+      <div
+        className="mt-3 md:mt-5 rounded-2xl border border-[var(--color-border)] p-4 md:p-5"
+        style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}
+      >
+        <h3 className="text-[13px] md:text-sm font-semibold mb-3 md:mb-3.5 flex items-center gap-2">
           <i className="fa-solid fa-bolt text-[var(--color-accent)] text-sm" />
-          Recent Activity
+          Activity
         </h3>
-        <div className="flex flex-col gap-2.5 max-md:gap-2 max-h-[200px] max-md:max-h-[160px] overflow-y-auto">
-          {activity.length ? activity.slice(0, 10).map((a, i) => (
-            <div key={i} className="flex items-start gap-2.5 max-md:gap-2 py-2 max-md:py-1.5 border-b border-[var(--color-border)] last:border-b-0 text-[13px] max-md:text-[12px]">
-              <span className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${
-                a.type === "success" ? "bg-[var(--color-success)]" :
-                a.type === "error" ? "bg-[var(--color-danger)]" :
-                a.type === "warning" ? "bg-[var(--color-warning)]" :
-                "bg-[var(--color-info)]"
-              }`} />
-              <span className="text-[var(--color-text)]">{esc(a.text)}</span>
-              <span className="ml-auto text-[11px] max-md:text-[10px] text-[var(--color-text-dim)] whitespace-nowrap flex-shrink-0">{a.time}</span>
-            </div>
-          )) : (
+        <div className="flex flex-col gap-1.5 md:gap-2.5 max-h-[180px] md:max-h-[200px] overflow-y-auto">
+          {activity.length ? (
+            activity.slice(0, 10).map((a, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-2 md:gap-2.5 py-1.5 md:py-2 border-b border-[var(--color-border)] last:border-b-0 text-[12px] md:text-[13px]"
+              >
+                <span
+                  className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
+                    a.type === "success"
+                      ? "bg-[var(--color-success)]"
+                      : a.type === "error"
+                        ? "bg-[var(--color-danger)]"
+                        : a.type === "warning"
+                          ? "bg-[var(--color-warning)]"
+                          : "bg-[var(--color-info)]"
+                  }`}
+                />
+                <span className="text-[var(--color-text)]">{esc(a.text)}</span>
+                <span className="ml-auto text-[10px] md:text-[11px] text-[var(--color-text-dim)] whitespace-nowrap flex-shrink-0">{a.time}</span>
+              </div>
+            ))
+          ) : (
             <p className="text-[13px] text-[var(--color-text-dim)] py-2">No activity yet.</p>
           )}
         </div>
@@ -105,8 +132,10 @@ function StatCard({ icon, accent, label, value }) {
 
   useEffect(() => {
     const numValue = parseFloat(value);
-    if (isNaN(numValue) || numValue === 0) { setDisplayValue(value); return; }
-
+    if (isNaN(numValue) || numValue === 0) {
+      setDisplayValue(value);
+      return;
+    }
     startRef.current = null;
     const isFloat = value.includes(".");
     const duration = 500;
@@ -120,7 +149,9 @@ function StatCard({ icon, accent, label, value }) {
       if (p < 1) rafRef.current = requestAnimationFrame(tick);
     }
     rafRef.current = requestAnimationFrame(tick);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
   }, [value]);
 
   const iconBg = {
@@ -131,25 +162,31 @@ function StatCard({ icon, accent, label, value }) {
   }[accent];
 
   return (
-    <div className="snap-start shrink-0 w-[180px] md:w-auto md:shrink rounded-[var(--radius-card)] border border-[var(--color-border)] p-[18px] max-md:p-3.5 flex items-center gap-3.5 max-md:gap-3 relative overflow-hidden transition-all duration-[0.22s] hover:-translate-y-0.5 hover:shadow-[var(--shadow-lg)] hover:border-[var(--color-border-light)] cursor-default active:scale-[0.98] max-md:active:scale-[0.99]"
+    <div
+      className="rounded-2xl border border-[var(--color-border)] p-3 md:p-[18px] flex items-center gap-3 md:gap-3.5 relative overflow-hidden transition-all duration-[0.22s] md:hover:-translate-y-0.5 md:hover:shadow-[var(--shadow-lg)] md:hover:border-[var(--color-border-light)] cursor-default active:scale-[0.97]"
       style={{
         background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)",
         backdropFilter: "blur(8px)",
-      }}>
-      <div className="absolute inset-0 rounded-[inherit] p-[1px] pointer-events-none"
+      }}
+    >
+      <div
+        className="absolute inset-0 rounded-[inherit] p-[1px] pointer-events-none"
         style={{
           background: "linear-gradient(135deg, rgba(255,255,255,0.08), transparent 40%)",
           WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
           WebkitMaskComposite: "xor",
           maskComposite: "exclude",
-        }} />
-      <div className="w-11 h-11 max-md:w-10 max-md:h-10 rounded-[var(--radius-sm)] flex items-center justify-center text-lg max-md:text-base flex-shrink-0"
-        style={{ background: iconBg.bg, color: iconBg.color }}>
+        }}
+      />
+      <div
+        className="w-10 h-10 md:w-11 md:h-11 rounded-xl flex items-center justify-center text-base md:text-lg flex-shrink-0"
+        style={{ background: iconBg.bg, color: iconBg.color }}
+      >
         <i className={`fa-solid ${icon}`} />
       </div>
       <div>
-        <span className="block text-[11px] max-md:text-[10px] text-[var(--color-text-muted)] uppercase tracking-[0.5px] mb-0.5">{label}</span>
-        <span className="block text-[26px] max-md:text-[22px] font-extrabold leading-[1.1] tracking-tight tabular-nums">{displayValue}</span>
+        <span className="block text-[10px] md:text-[11px] text-[var(--color-text-muted)] uppercase tracking-[0.5px] mb-0.5">{label}</span>
+        <span className="block text-[20px] md:text-[26px] font-extrabold leading-[1.1] tracking-tight tabular-nums">{displayValue}</span>
       </div>
     </div>
   );

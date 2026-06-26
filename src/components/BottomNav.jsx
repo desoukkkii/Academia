@@ -11,32 +11,47 @@ export default function BottomNav() {
   const { view, setView } = useApp();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-[300] md:hidden flex items-center justify-around border-t border-[var(--color-border)] px-2 pb-[env(safe-area-inset-bottom,0px)]"
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-[300] md:hidden flex items-stretch border-t border-[var(--color-border)]"
       style={{
-        background: "color-mix(in oklab, var(--color-bg-elevated) 85%, transparent)",
-        backdropFilter: "blur(24px) saturate(180%)",
-        WebkitBackdropFilter: "blur(24px) saturate(180%)",
-      }}>
+        background: "color-mix(in oklab, var(--color-bg-elevated) 92%, transparent)",
+        backdropFilter: "blur(30px) saturate(180%)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
+    >
       {TABS.map((tab) => {
         const active = view === tab.view;
         return (
           <button
             key={tab.view}
             onClick={() => setView(tab.view)}
-            className={`flex flex-col items-center justify-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-200 min-w-0 flex-1 ${
-              active
-                ? "text-[var(--color-primary-light)]"
-                : "text-[var(--color-text-dim)] hover:text-[var(--color-text-muted)]"
-            }`}
+            className="flex flex-col items-center justify-center flex-1 py-1.5 relative transition-all duration-200 active:scale-95"
           >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 ${
-              active
-                ? "bg-[var(--color-primary-glow)]"
-                : ""
-            }`}>
-              <i className={`fa-solid ${tab.icon} text-lg ${active ? "drop-shadow-[0_0_8px_var(--color-primary-glow)]" : ""}`} />
+            {active && (
+              <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[3px] rounded-b-full bg-[var(--color-primary)] shadow-[0_0_12px_var(--color-primary-glow)]" />
+            )}
+            <div
+              className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                active ? "bg-[var(--color-primary-glow)] scale-105" : ""
+              }`}
+            >
+              <i
+                className={`fa-solid ${tab.icon} text-lg transition-all duration-300 ${
+                  active
+                    ? "text-[var(--color-primary-light)] drop-shadow-[0_0_8px_var(--color-primary-glow)]"
+                    : "text-[var(--color-text-dim)]"
+                }`}
+              />
             </div>
-            <span className={`text-[10px] font-medium leading-tight ${active ? "font-semibold" : ""}`}>{tab.label}</span>
+            <span
+              className={`text-[9px] leading-tight mt-0.5 transition-all duration-300 ${
+                active
+                  ? "text-[var(--color-primary-light)] font-semibold"
+                  : "text-[var(--color-text-dim)]"
+              }`}
+            >
+              {tab.label}
+            </span>
           </button>
         );
       })}
