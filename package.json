@@ -1,13 +1,14 @@
 {
   "name": "quantio-student",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "A modern, single-page student management system built with React 19, Tailwind CSS v4, and Vite.",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "oxlint"
   },
   "dependencies": {
     "react": "^19.2.7",

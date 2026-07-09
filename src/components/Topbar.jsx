@@ -8,11 +8,50 @@ const TITLES = {
   add: "Add Student",
 };
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.innerWidth < breakpoint
+  );
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [breakpoint]);
+
+  return isMobile;
+}
+
+function SearchInput({ value, onChange, onClear, placeholder, ref }) {
+  return (
+    <>
+      <input
+        ref={ref}
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="bg-transparent border-none outline-none text-[13px] flex-1 min-w-0 text-[var(--color-text)] placeholder:text-[var(--color-text-dim)]"
+      />
+      {value && (
+        <button
+          onClick={onClear}
+          className="flex-shrink-0 text-[var(--color-text-dim)] text-xs p-0.5 rounded-full hover:text-[var(--color-text)]"
+        >
+          <i className="fa-solid fa-xmark" />
+        </button>
+      )}
+    </>
+  );
+}
+
 export default function Topbar({ onShortcutsToggle }) {
   const { view, editingId, theme, toggleTheme, setFilters, setView } = useApp();
   const [searchVal, setSearchVal] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const inputRef = useRef(null);
+  const mobileInputRef = useRef(null);
+  const desktopInputRef = useRef(null);
+  const isMobile = useIsMobile();
   const title = editingId && view === "add" ? "Edit Student" : TITLES[view] || "";
 
   useEffect(() => {
@@ -20,10 +59,11 @@ export default function Topbar({ onShortcutsToggle }) {
   }, [view]);
 
   useEffect(() => {
-    if (searchOpen && inputRef.current) {
-      inputRef.current.focus();
+    const input = isMobile ? mobileInputRef.current : desktopInputRef.current;
+    if (searchOpen && input) {
+      input.focus();
     }
-  }, [searchOpen]);
+  }, [searchOpen, isMobile]);
 
   const handleSearch = (val) => {
     setSearchVal(val);
@@ -31,7 +71,10 @@ export default function Topbar({ onShortcutsToggle }) {
     if (view !== "students") setView("students");
   };
 
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const clearSearch = () => {
+    handleSearch("");
+    setSearchOpen(false);
+  };
 
   return (
     <header
@@ -64,42 +107,32 @@ export default function Topbar({ onShortcutsToggle }) {
                 searchOpen ? "w-4" : "w-9 h-9 rounded-full hover:bg-[var(--color-surface-1)]"
               }`}
             >
-              <i className={`fa-solid fa-magnifying-glass text-[var(--color-text-dim)] text-sm`} />
+              <i className="fa-solid fa-magnifying-glass text-[var(--color-text-dim)] text-sm" />
             </button>
             {searchOpen && (
-              <>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={searchVal}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  placeholder="Search..."
-                  className="bg-transparent border-none outline-none text-[13px] flex-1 min-w-0 text-[var(--color-text)] placeholder:text-[var(--color-text-dim)]"
-                />
-                {searchVal && (
-                  <button
-                    onClick={() => { handleSearch(""); setSearchOpen(false); }}
-                    className="flex-shrink-0 text-[var(--color-text-dim)] text-xs p-0.5 rounded-full hover:text-[var(--color-text)]"
-                  >
-                    <i className="fa-solid fa-xmark" />
-                  </button>
-                )}
-              </>
+              <SearchInput
+                ref={mobileInputRef}
+                value={searchVal}
+                onChange={handleSearch}
+                onClear={clearSearch}
+                placeholder="Search..."
+              />
             )}
           </div>
         </div>
 
         {/* Desktop search */}
-        <div className="hidden md:flex items-center gap-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-full px-3.5 py-1.5 transition-all duration-[0.22s] focus-within:border-[var(--color-primary)]"
-          style={{ background: "color-mix(in oklab, var(--color-bg-elevated) 80%, transparent)" }}>
+        <div
+          className="hidden md:flex items-center gap-2 bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-full px-3.5 py-1.5 transition-all duration-[0.22s] focus-within:border-[var(--color-primary)]"
+          style={{ background: "color-mix(in oklab, var(--color-bg-elevated) 80%, transparent)" }}
+        >
           <i className="fa-solid fa-magnifying-glass text-[var(--color-text-dim)] text-[13px]" />
-          <input
-            ref={inputRef}
-            type="text"
+          <SearchInput
+            ref={desktopInputRef}
             value={searchVal}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={handleSearch}
+            onClear={() => handleSearch("")}
             placeholder="Search name or ID…"
-            className="bg-transparent border-none outline-none text-[13px] w-[170px] text-[var(--color-text)] placeholder:text-[var(--color-text-dim)]"
           />
           {searchVal && (
             <button onClick={() => handleSearch("")} className="text-[var(--color-text-dim)] text-xs p-0.5 rounded-full hover:text-[var(--color-text)] hover:bg-[var(--color-surface-1)]">

@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { useToast } from "./Toast";
-import { esc } from "../utils";
+
+const INITIAL_FORM = {
+  name: "", studentId: "", email: "", grade: "", gpa: "", enrollDate: "",
+};
 
 export default function AddStudentForm() {
-  const { students, editingId, setEditing, addStudent, updateStudent, formError, clearFormError, setView } = useApp();
+  const { students, editingId, addStudent, updateStudent, formError, clearFormError, setView } = useApp();
   const showToast = useToast();
 
   const editingStudent = editingId ? students.find((s) => s.id === editingId) : null;
   const isEdit = !!editingStudent;
 
-  const [form, setForm] = useState({
-    name: "", studentId: "", email: "", grade: "", gpa: "", enrollDate: "",
-  });
+  const [form, setForm] = useState(INITIAL_FORM);
 
   useEffect(() => {
     if (editingStudent) {
@@ -25,40 +26,30 @@ export default function AddStudentForm() {
         enrollDate: editingStudent.enrollDate,
       });
     } else {
-      setForm({ name: "", studentId: "", email: "", grade: "", gpa: "", enrollDate: "" });
+      setForm(INITIAL_FORM);
     }
     clearFormError();
   }, [editingId]);
 
-  const fieldMap = {
-    fName: "name", fId: "studentId", fEmail: "email", fGrade: "grade", fGpa: "gpa", fDate: "enrollDate",
-  };
-  const handleFieldChange = (e) => {
-    const key = fieldMap[e.target.id];
-    if (key) setForm((prev) => ({ ...prev, [key]: e.target.value }));
+  const setField = (field) => (e) => {
+    setForm((prev) => ({ ...prev, [field]: e.target.value }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const data = {
-      name: form.name, studentId: form.studentId, email: form.email,
-      grade: form.grade, gpa: form.gpa, enrollDate: form.enrollDate,
-    };
     if (isEdit) {
-      updateStudent({ ...data, id: editingId });
+      updateStudent({ ...form, id: editingId, grade: Number(form.grade), gpa: form.gpa });
     } else {
-      addStudent(data);
+      addStudent({ ...form, grade: Number(form.grade), gpa: form.gpa });
     }
   };
 
   const cancelEdit = () => {
-    setEditing(null);
     setView("students");
   };
 
   const fieldError = (field) => {
-    if (formError && formError.field === field) return formError.error;
-    return "";
+    return formError?.field === field ? formError.error : "";
   };
 
   return (
@@ -73,12 +64,12 @@ export default function AddStudentForm() {
         </h2>
         <form onSubmit={handleSubmit} noValidate>
           <div className="flex flex-col md:grid md:grid-cols-2 gap-3 md:gap-[18px]">
-            <FormGroup label="Full Name" required id="fName" value={form.name} onChange={handleFieldChange} error={fieldError("name")} placeholder="Emma Watson" />
-            <FormGroup label="Student ID" required id="fId" value={form.studentId} onChange={handleFieldChange} error={fieldError("studentId")} placeholder="STU-001" />
-            <FormGroup label="Email" required id="fEmail" type="email" value={form.email} onChange={handleFieldChange} error={fieldError("email")} placeholder="emma@school.edu" />
-            <FormSelect label="Grade Level" required id="fGrade" value={form.grade} onChange={handleFieldChange} error={fieldError("grade")} />
-            <FormGroup label="GPA (0.0–4.0)" required id="fGpa" type="number" value={form.gpa} onChange={handleFieldChange} error={fieldError("gpa")} placeholder="3.50" step="0.01" min="0" max="4" />
-            <FormGroup label="Enrollment Date" required id="fDate" type="date" value={form.enrollDate} onChange={handleFieldChange} error={fieldError("enrollDate")} />
+            <FormGroup label="Full Name" required value={form.name} onChange={setField("name")} error={fieldError("name")} placeholder="Emma Watson" />
+            <FormGroup label="Student ID" required value={form.studentId} onChange={setField("studentId")} error={fieldError("studentId")} placeholder="STU-001" />
+            <FormGroup label="Email" required type="email" value={form.email} onChange={setField("email")} error={fieldError("email")} placeholder="emma@school.edu" />
+            <FormSelect label="Grade Level" required value={form.grade} onChange={setField("grade")} error={fieldError("grade")} />
+            <FormGroup label="GPA (0.0–4.0)" required type="number" value={form.gpa} onChange={setField("gpa")} error={fieldError("gpa")} placeholder="3.50" step="0.01" min="0" max="4" />
+            <FormGroup label="Enrollment Date" required type="date" value={form.enrollDate} onChange={setField("enrollDate")} error={fieldError("enrollDate")} />
           </div>
           <div className="mt-5 md:mt-6 flex gap-2.5 justify-end max-md:flex-col">
             {isEdit && (
@@ -105,14 +96,14 @@ export default function AddStudentForm() {
   );
 }
 
-function FormGroup({ label, required, id, type = "text", value, onChange, error, placeholder, ...rest }) {
+function FormGroup({ label, required, type = "text", value, onChange, error, placeholder, ...rest }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-[11px] md:text-xs font-medium text-[var(--color-text-muted)] tracking-[0.2px]">
+      <label htmlFor={label.toLowerCase().replace(/\s+/g, "-")} className="text-[11px] md:text-xs font-medium text-[var(--color-text-muted)] tracking-[0.2px]">
         {label} {required && <span className="text-[var(--color-danger)]">*</span>}
       </label>
       <input
-        id={id}
+        id={label.toLowerCase().replace(/\s+/g, "-")}
         type={type}
         value={value}
         onChange={onChange}
@@ -125,14 +116,14 @@ function FormGroup({ label, required, id, type = "text", value, onChange, error,
   );
 }
 
-function FormSelect({ label, required, id, value, onChange, error }) {
+function FormSelect({ label, required, value, onChange, error }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-[11px] md:text-xs font-medium text-[var(--color-text-muted)] tracking-[0.2px]">
+      <label htmlFor={label.toLowerCase().replace(/\s+/g, "-")} className="text-[11px] md:text-xs font-medium text-[var(--color-text-muted)] tracking-[0.2px]">
         {label} {required && <span className="text-[var(--color-danger)]">*</span>}
       </label>
       <select
-        id={id}
+        id={label.toLowerCase().replace(/\s+/g, "-")}
         value={value}
         onChange={onChange}
         className={`bg-[var(--color-bg-elevated)] border ${error ? "border-[var(--color-danger)]" : "border-[var(--color-border)]"} rounded-xl px-3.5 py-[11px] md:py-[9px] text-[14px] md:text-[13px] outline-none transition-all w-full appearance-none cursor-pointer focus:border-[var(--color-primary)] focus:shadow-[0_0_0_3px_var(--color-primary-glow)]`}

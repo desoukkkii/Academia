@@ -13,7 +13,7 @@ import ConfirmModal from "./components/ConfirmModal";
 import ShortcutsPanel from "./components/ShortcutsPanel";
 
 function AppContent() {
-  const { view, theme, toggleTheme, setView, setEditing, setFilters } = useApp();
+  const { view, theme, toggleTheme, setView, setEditing } = useApp();
   const [detailId, setDetailId] = useState(null);
   const [confirmId, setConfirmId] = useState(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -30,7 +30,6 @@ function AppContent() {
         case "2": setView("students"); ev.preventDefault(); break;
         case "3": setView("attendance"); ev.preventDefault(); break;
         case "n": case "N": setView("add"); ev.preventDefault(); break;
-        case "/": document.querySelector("#searchInput")?.focus(); ev.preventDefault(); break;
         case "t": case "T": toggleTheme(); ev.preventDefault(); break;
         case "Escape":
           setDetailId(null); setConfirmId(null); setShortcutsOpen(false);
@@ -48,15 +47,12 @@ function AppContent() {
         backgroundImage: "radial-gradient(1200px 600px at 12% -10%, var(--color-primary-glow), transparent 60%), radial-gradient(900px 500px at 100% 0%, var(--color-secondary-glow), transparent 55%)",
         backgroundAttachment: "fixed",
       }}>
-      {/* Sidebar: md+ only */}
       <div className="hidden md:block">
         <Sidebar />
       </div>
 
       <div className="flex-1 flex flex-col min-h-screen ml-0 md:ml-[232px]">
-        <Topbar
-          onShortcutsToggle={() => setShortcutsOpen((p) => !p)}
-        />
+        <Topbar onShortcutsToggle={() => setShortcutsOpen((p) => !p)} />
 
         <main className="flex-1 p-6 max-md:px-4 max-md:pt-4 max-md:pb-[88px] lg:p-6" id="main">
           {view === "dashboard" && <Dashboard onStudentClick={(id) => setDetailId(id)} />}
@@ -72,7 +68,6 @@ function AppContent() {
         </main>
       </div>
 
-      {/* Bottom Navigation: mobile only */}
       <BottomNav />
 
       {detailId && <StudentDetailModal studentId={detailId} onClose={() => setDetailId(null)} />}

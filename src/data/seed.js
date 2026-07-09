@@ -1,6 +1,6 @@
-import { today } from "../utils";
+import { uid } from "../utils";
 
-export const SAMPLE_STUDENTS = [
+const SAMPLE_STUDENTS = [
   {
     name: "Emma Watson",
     studentId: "STU-001",
@@ -43,22 +43,28 @@ export const SAMPLE_STUDENTS = [
   },
 ];
 
-function buildAttendance(student, daysBack = 10) {
+function buildAttendance(daysBack = 10) {
   const attendance = {};
   const now = new Date();
   for (let d = daysBack; d >= 1; d--) {
     const dt = new Date(now);
     dt.setDate(dt.getDate() - d);
-    const key = dt.toISOString().slice(0, 10);
-    attendance[key] = Math.random() > 0.15 ? "present" : "absent";
+    attendance[dt.toISOString().slice(0, 10)] =
+      Math.random() > 0.15 ? "present" : "absent";
   }
   return attendance;
 }
 
 export function getSeedStudents() {
   return SAMPLE_STUDENTS.map((s) => ({
-    ...s,
-    attendance: buildAttendance(s),
+    id: uid(),
+    name: s.name.trim(),
+    studentId: s.studentId.trim().toUpperCase(),
+    email: s.email.trim().toLowerCase(),
+    grade: Number(s.grade),
+    gpa: Number(Number(s.gpa).toFixed(2)),
+    enrollDate: s.enrollDate,
+    attendance: buildAttendance(),
     createdAt: new Date().toISOString(),
   }));
 }

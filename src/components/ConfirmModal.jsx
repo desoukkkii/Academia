@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useApp } from "../context/AppContext";
 import { useToast } from "./Toast";
 
@@ -6,20 +7,19 @@ export default function ConfirmModal({ studentId, onClose }) {
   const showToast = useToast();
   const s = students.find((st) => st.id === studentId);
 
-  if (!s) return null;
-
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     deleteStudent(s.id);
     showToast("Student removed.", "success");
     onClose();
-  };
+  }, [s, deleteStudent, showToast, onClose]);
+
+  if (!s) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-[1000] p-0 sm:p-5"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="w-full sm:max-w-[360px] rounded-t-2xl sm:rounded-2xl border border-[var(--color-border)] p-7 max-sm:px-5 max-sm:py-4 text-center animate-[fadeSlideUp_0.25s_ease]"
         style={{ background: "var(--color-bg-card)" }}>
-        {/* Drag handle for mobile bottom sheet */}
         <div className="sm:hidden flex justify-center pb-3 -mt-1">
           <div className="w-9 h-1 rounded-full bg-[var(--color-border-light)]" />
         </div>

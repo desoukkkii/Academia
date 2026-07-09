@@ -1,11 +1,9 @@
-import { createContext, useContext, useReducer, useCallback } from "react";
+import { createContext, useContext, useReducer, useCallback, useMemo } from "react";
 import { loadStudents, saveStudents } from "../services/storage";
 import { getSeedStudents } from "../data/seed";
-import { uid, today } from "../utils";
+import { uid, today, getAttendancePct, getGpaTier } from "../utils";
 
 const AppContext = createContext(null);
-
-const VIEWS = ["dashboard", "students", "attendance", "add"];
 const THEME_KEY = "quantio_theme";
 
 function createStudent(data) {
@@ -20,19 +18,6 @@ function createStudent(data) {
     attendance: data.attendance || {},
     createdAt: data.createdAt || new Date().toISOString(),
   };
-}
-
-function getAttendancePct(student) {
-  const days = Object.values(student.attendance);
-  if (!days.length) return null;
-  const present = days.filter((v) => v === "present").length;
-  return Math.round((present / days.length) * 100);
-}
-
-function getGpaTier(gpa) {
-  if (gpa >= 3.5) return "high";
-  if (gpa >= 2.5) return "mid";
-  return "low";
 }
 
 function getStats(students) {
@@ -198,6 +183,16 @@ function reducer(state, action) {
       saveStudents(newStudents);
       return { ...state, students: newStudents };
     }
+    case "MARK_ALL_ATTENDANCE": {
+      const status = action.payload;
+      const todayKey = today();
+      const newStudents = state.students.map((s) => ({
+        ...s,
+        attendance: { ...s.attendance, [todayKey]: status },
+      }));
+      saveStudents(newStudents);
+      return { ...state, students: newStudents };
+    }
     case "CLEAR_FORM_ERROR":
       return { ...state, formError: null };
     case "ADD_ACTIVITY":
@@ -222,8 +217,8 @@ function getFilteredStudents(students, filters) {
     list.sort((a, b) => {
       let va, vb;
       if (sort === "name") { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); }
-      if (sort === "grade") { va = a.grade; vb = b.grade; }
-      if (sort === "gpa") { va = a.gpa; vb = b.gpa; }
+      else if (sort === "grade") { va = a.grade; vb = b.grade; }
+      else if (sort === "gpa") { va = a.gpa; vb = b.gpa; }
       if (va < vb) return dir === "asc" ? -1 : 1;
       if (va > vb) return dir === "asc" ? 1 : -1;
       return 0;
@@ -266,16 +261,20 @@ export function AppProvider({ children }) {
   const clearFormError = useCallback(() => dispatch({ type: "CLEAR_FORM_ERROR" }), []);
   const addActivity = useCallback((type, text) => dispatch({ type: "ADD_ACTIVITY", payload: { type, text } }), []);
 
-  const filteredStudents = getFilteredStudents(state.students, state.filters);
-  const stats = getStats(state.students);
+  const filteredStudents = useMemo(
+    () => getFilteredStudents(state.students, state.filters),
+    [state.students, state.filters]
+  );
+
+  const stats = useMemo(() => getStats(state.students), [state.students]);
 
   const markAllPresent = useCallback(() => {
-    state.students.forEach((s) => markAttendance(s.id, "present"));
-  }, [state.students, markAttendance]);
+    dispatch({ type: "MARK_ALL_ATTENDANCE", payload: "present" });
+  }, []);
 
   const markAllAbsent = useCallback(() => {
-    state.students.forEach((s) => markAttendance(s.id, "absent"));
-  }, [state.students, markAttendance]);
+    dispatch({ type: "MARK_ALL_ATTENDANCE", payload: "absent" });
+  }, []);
 
   const handleExportCSV = useCallback(() => {
     const csv = exportCSV(state.students);
@@ -294,8 +293,14 @@ export function AppProvider({ children }) {
     return results;
   }, [state.students]);
 
-  const value = {
-    ...state,
+  const value = useMemo(() => ({
+    students: state.students,
+    view: state.view,
+    theme: state.theme,
+    filters: state.filters,
+    editingId: state.editingId,
+    formError: state.formError,
+    activity: state.activity,
     filteredStudents,
     stats,
     setView,
@@ -313,9 +318,15 @@ export function AppProvider({ children }) {
     markAllAbsent,
     handleExportCSV,
     handleImportCSV,
-    getAttendancePct,
-    getGpaTier,
-  };
+  }), [
+    state.students, state.view, state.theme, state.filters,
+    state.editingId, state.formError, state.activity,
+    filteredStudents, stats,
+    setView, setTheme, toggleTheme, setFilters, setEditing,
+    addStudent, updateStudent, deleteStudent, markAttendance,
+    clearFormError, addActivity, markAllPresent, markAllAbsent,
+    handleExportCSV, handleImportCSV,
+  ]);
 
   return <AppContext value={value}>{children}</AppContext>;
 }

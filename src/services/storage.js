@@ -13,6 +13,6 @@ export function saveStudents(students) {
   try {
     localStorage.setItem(KEY, JSON.stringify(students));
   } catch (e) {
-    console.error("Quantio: save failed", e);
+    console.warn("Quantio: save failed", e);
   }
 }

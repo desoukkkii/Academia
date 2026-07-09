@@ -1,13 +1,81 @@
+import { useMemo } from "react";
 import { useApp } from "../context/AppContext";
-import { getInitials, esc, formatLongDate, today } from "../utils";
+import { getInitials, formatLongDate, today, getAttendancePct } from "../utils";
 import { useToast } from "./Toast";
 
+function getPctClass(pct) {
+  if (pct === null) return "";
+  if (pct >= 80) return "text-[var(--color-success)]";
+  if (pct >= 60) return "text-[var(--color-warning)]";
+  return "text-[var(--color-danger)]";
+}
+
+function StudentAttendanceCard({ student, todayKey, onMark }) {
+  const todayStatus = student.attendance[todayKey] || "";
+  const pct = getAttendancePct(student);
+  const pctStr = pct !== null ? `${pct}%` : "—";
+
+  const borderClass = todayStatus === "present"
+    ? "border-l-[3px] border-l-[var(--color-success)]"
+    : todayStatus === "absent"
+      ? "border-l-[3px] border-l-[var(--color-danger)]"
+      : "";
+
+  return (
+    <div
+      className={`rounded-2xl border border-[var(--color-border)] p-3 md:p-3.5 flex items-center gap-3 transition-all hover:border-[var(--color-border-light)] active:scale-[0.98] ${borderClass}`}
+      style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}
+    >
+      <div className="w-10 h-10 md:w-[38px] md:h-[38px] rounded-full bg-[var(--color-surface-2)] text-[var(--color-text-muted)] flex items-center justify-center text-sm md:text-[13px] font-bold flex-shrink-0">
+        {getInitials(student.name)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[14px] md:text-[13px] font-medium truncate">{student.name}</div>
+        <div className="text-[11px] md:text-[11px] text-[var(--color-text-muted)]">
+          Gr {student.grade} · <span className={`font-semibold ${getPctClass(pct)}`}>{pctStr}</span>
+        </div>
+      </div>
+      <div className="flex rounded-xl border border-[var(--color-border)] overflow-hidden flex-shrink-0">
+        <button
+          onClick={() => onMark(student.id, "present")}
+          className={`px-4 md:px-3.5 py-2.5 md:py-2 text-[13px] md:text-[12px] font-bold font-mono transition-all active:scale-95 ${
+            todayStatus === "present"
+              ? "bg-[rgba(52,211,153,0.15)] text-[var(--color-success)]"
+              : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-1)]"
+          }`}
+        >
+          P
+        </button>
+        <button
+          onClick={() => onMark(student.id, "absent")}
+          className={`px-4 md:px-3.5 py-2.5 md:py-2 text-[13px] md:text-[12px] font-bold font-mono transition-all active:scale-95 ${
+            todayStatus === "absent"
+              ? "bg-[rgba(248,113,113,0.15)] text-[var(--color-danger)]"
+              : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-1)]"
+          }`}
+        >
+          A
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function AttendanceView() {
-  const { students, markAttendance, markAllPresent, markAllAbsent, getAttendancePct } = useApp();
+  const { students, markAttendance, markAllPresent, markAllAbsent } = useApp();
   const showToast = useToast();
   const todayKey = today();
-  const present = students.filter((s) => s.attendance[todayKey] === "present").length;
-  const absent = students.filter((s) => s.attendance[todayKey] === "absent").length;
+
+  const { present, absent, unmarked } = useMemo(() => {
+    let p = 0, a = 0, u = 0;
+    students.forEach((s) => {
+      const status = s.attendance[todayKey];
+      if (status === "present") p++;
+      else if (status === "absent") a++;
+      else u++;
+    });
+    return { present: p, absent: a, unmarked: u };
+  }, [students, todayKey]);
 
   const handleMark = (id, status) => {
     markAttendance(id, status);
@@ -47,64 +115,20 @@ export default function AttendanceView() {
           <span className="text-[var(--color-danger)] font-semibold">{absent} absent</span>
         </span>
         <span className="text-[var(--color-border-light)]">·</span>
-        <span className="text-[var(--color-text-dim)]">{students.length - present - absent} unmarked</span>
+        <span className="text-[var(--color-text-dim)]">{unmarked} unmarked</span>
       </div>
 
       {/* Student list */}
       <div className="flex flex-col gap-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3">
         {students.length ? (
-          students.map((s) => {
-            const todayStatus = s.attendance[todayKey] || "";
-            const pct = getAttendancePct(s);
-            const pctStr = pct !== null ? `${pct}%` : "—";
-            const pctCls = pct === null ? "" : pct >= 80 ? "text-[var(--color-success)]" : pct >= 60 ? "text-[var(--color-warning)]" : "text-[var(--color-danger)]";
-
-            return (
-              <div
-                key={s.id}
-                className={`rounded-2xl border border-[var(--color-border)] p-3 md:p-3.5 flex items-center gap-3 transition-all hover:border-[var(--color-border-light)] active:scale-[0.98] ${
-                  todayStatus === "present"
-                    ? "border-l-[3px] border-l-[var(--color-success)]"
-                    : todayStatus === "absent"
-                      ? "border-l-[3px] border-l-[var(--color-danger)]"
-                      : ""
-                }`}
-                style={{ background: "linear-gradient(180deg, var(--color-surface-1), transparent 60%), var(--color-bg-card)" }}
-              >
-                <div className="w-10 h-10 md:w-[38px] md:h-[38px] rounded-full bg-[var(--color-surface-2)] text-[var(--color-text-muted)] flex items-center justify-center text-sm md:text-[13px] font-bold flex-shrink-0">
-                  {getInitials(s.name)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[14px] md:text-[13px] font-medium truncate">{esc(s.name)}</div>
-                  <div className="text-[11px] md:text-[11px] text-[var(--color-text-muted)]">
-                    Gr {s.grade} · <span className={`font-semibold ${pctCls}`}>{pctStr}</span>
-                  </div>
-                </div>
-                <div className="flex rounded-xl border border-[var(--color-border)] overflow-hidden flex-shrink-0">
-                  <button
-                    onClick={() => handleMark(s.id, "present")}
-                    className={`px-4 md:px-3.5 py-2.5 md:py-2 text-[13px] md:text-[12px] font-bold font-mono transition-all active:scale-95 ${
-                      todayStatus === "present"
-                        ? "bg-[rgba(52,211,153,0.15)] text-[var(--color-success)]"
-                        : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-1)]"
-                    }`}
-                  >
-                    P
-                  </button>
-                  <button
-                    onClick={() => handleMark(s.id, "absent")}
-                    className={`px-4 md:px-3.5 py-2.5 md:py-2 text-[13px] md:text-[12px] font-bold font-mono transition-all active:scale-95 ${
-                      todayStatus === "absent"
-                        ? "bg-[rgba(248,113,113,0.15)] text-[var(--color-danger)]"
-                        : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-1)]"
-                    }`}
-                  >
-                    A
-                  </button>
-                </div>
-              </div>
-            );
-          })
+          students.map((s) => (
+            <StudentAttendanceCard
+              key={s.id}
+              student={s}
+              todayKey={todayKey}
+              onMark={handleMark}
+            />
+          ))
         ) : (
           <p className="text-[var(--color-text-dim)] text-sm text-center py-12 col-span-full">No students yet.</p>
         )}

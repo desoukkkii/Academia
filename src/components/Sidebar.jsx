@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useApp } from "../context/AppContext";
 
 const NAV_ITEMS = [
@@ -65,7 +66,7 @@ export default function Sidebar() {
 function ImportButton() {
   const { handleImportCSV, addActivity } = useApp();
 
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -75,7 +76,7 @@ function ImportButton() {
     };
     reader.readAsText(file);
     e.target.value = "";
-  };
+  }, [handleImportCSV, addActivity]);
 
   return (
     <label className="flex items-center gap-2.5 px-3 py-[9px] rounded-[var(--radius-sm)] text-[13px] text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-1)] transition-all cursor-pointer">

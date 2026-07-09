@@ -1,16 +1,24 @@
+import { useMemo } from "react";
 import { useApp } from "../context/AppContext";
-import { getInitials, dateStr } from "../utils";
+import { getInitials, dateStr, getAttendancePct } from "../utils";
+
+function useGpaStyle(gpa) {
+  return useMemo(() => {
+    if (gpa >= 3.5) return "var(--color-success)";
+    if (gpa >= 2.5) return "var(--color-warning)";
+    return "var(--color-danger)";
+  }, [gpa]);
+}
 
 export default function StudentDetailModal({ studentId, onClose }) {
-  const { students, getAttendancePct, getGpaTier } = useApp();
+  const { students } = useApp();
   const s = students.find((st) => st.id === studentId);
   if (!s) return null;
 
   const pct = getAttendancePct(s);
   const daysRecorded = Object.keys(s.attendance).length;
   const enrollDate = s.enrollDate ? dateStr(s.enrollDate) : "—";
-  const gpaTier = getGpaTier(s.gpa);
-  const gpaColor = gpaTier === "high" ? "var(--color-success)" : gpaTier === "low" ? "var(--color-danger)" : "var(--color-warning)";
+  const gpaColor = useGpaStyle(s.gpa);
 
   return (
     <div
@@ -21,7 +29,6 @@ export default function StudentDetailModal({ studentId, onClose }) {
         className="w-full sm:max-w-[480px] rounded-t-3xl sm:rounded-2xl border border-[var(--color-border)] p-5 md:p-7 relative max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-[slideUp_0.3s_cubic-bezier(0.32,0.72,0,1)]"
         style={{ background: "var(--color-bg-card)" }}
       >
-        {/* Drag handle */}
         <div className="sm:hidden flex justify-center pb-2 -mt-1">
           <div className="w-10 h-1 rounded-full bg-[var(--color-border-light)]" />
         </div>

@@ -27,17 +27,6 @@ export function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function timeAgo(iso) {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  return `${days}d ago`;
-}
-
 export function getInitials(name) {
   return name
     .split(" ")
@@ -54,4 +43,17 @@ export function formatLongDate(d) {
     month: "long",
     day: "numeric",
   });
+}
+
+export function getAttendancePct(student) {
+  const days = Object.values(student.attendance);
+  if (!days.length) return null;
+  const present = days.filter((v) => v === "present").length;
+  return Math.round((present / days.length) * 100);
+}
+
+export function getGpaTier(gpa) {
+  if (gpa >= 3.5) return "high";
+  if (gpa >= 2.5) return "mid";
+  return "low";
 }
