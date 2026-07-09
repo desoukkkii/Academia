@@ -22,7 +22,7 @@ export default function Sidebar() {
           <i className="fa-solid fa-atom" />
         </div>
         <div>
-          <div className="text-base font-bold tracking-tight">Quantio</div>
+          <div className="text-base font-bold tracking-tight">Academia</div>
           <div className="text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider block -mt-0.5">Student Intelligence</div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-# Quantio — Student Intelligence Platform
+# Academia — Student Intelligence Platform
 
 A modern, single-page student management system built with **React 19**, **Tailwind CSS v4**, and **Vite**.
 

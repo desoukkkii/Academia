@@ -1,4 +1,4 @@
-const KEY = "quantio_students";
+const KEY = "academia_students";
 
 export function loadStudents() {
   try {
@@ -13,6 +13,6 @@ export function saveStudents(students) {
   try {
     localStorage.setItem(KEY, JSON.stringify(students));
   } catch (e) {
-    console.warn("Quantio: save failed", e);
+    console.warn("Academia: save failed", e);
   }
 }

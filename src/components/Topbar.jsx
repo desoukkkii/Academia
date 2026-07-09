@@ -163,7 +163,7 @@ export default function Topbar({ onShortcutsToggle }) {
             boxShadow: "0 4px 16px -4px var(--color-primary-glow), 0 0 0 1px rgba(255,255,255,0.08) inset",
           }}
         >
-          Q
+          A
         </div>
       </div>
     </header>

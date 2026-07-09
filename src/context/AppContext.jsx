@@ -4,7 +4,7 @@ import { getSeedStudents } from "../data/seed";
 import { uid, today, getAttendancePct, getGpaTier } from "../utils";
 
 const AppContext = createContext(null);
-const THEME_KEY = "quantio_theme";
+const THEME_KEY = "academia_theme";
 
 function createStudent(data) {
   return {
@@ -282,7 +282,7 @@ export function AppProvider({ children }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `quantio-students-${today()}.csv`;
+    a.download = `academia-students-${today()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }, [state.students]);
